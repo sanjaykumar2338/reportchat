@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\User;
@@ -12,16 +11,27 @@ class AuthController extends Controller
     // User Registration
     public function register(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:255',
+                'username' => 'required|string|max:255|unique:users', // Validate username
+                'email' => 'nullable|string|email|max:255|unique:users', // Email is optional
+                'phone' => 'nullable|string|max:15', // Phone is optional
+                'password' => 'required|string|min:6|confirmed',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        }
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name' => $validatedData['name'],
+            'username' => $validatedData['username'],
+            'email' => $validatedData['email'] ?? null,
+            'phone' => $validatedData['phone'] ?? null,
+            'password' => Hash::make($validatedData['password']),
         ]);
 
         return response()->json([
@@ -30,17 +40,26 @@ class AuthController extends Controller
         ], 201);
     }
 
-    // User Login
+    // User Login (Login with either Username or Email)
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|string|email',
-            'password' => 'required|string',
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'username' => 'required|string', // Can be username or email
+                'password' => 'required|string',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        }
 
-        $user = User::where('email', $request->email)->first();
+        // Check if login is an email or username
+        $user = User::where('username', $validatedData['username'])
+                    ->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($validatedData['password'], $user->password)) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
