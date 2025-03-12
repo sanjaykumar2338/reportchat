@@ -117,4 +117,18 @@ class ChatController extends Controller
 
         return response()->json(['message' => 'Admin reply sent', 'chat' => $message], 201);
     }
+
+    // Get all chats list with title, location, and status
+    public function getChatsList()
+    {
+        $chats = Chat::where('user_id', Auth::id()) // Fetch chats for logged-in user
+                    ->select('id', 'title', 'location', 'status', 'created_at')
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+
+        return response()->json([
+            'message' => 'Chats retrieved successfully',
+            'chats' => $chats
+        ], 200);
+    }
 }
