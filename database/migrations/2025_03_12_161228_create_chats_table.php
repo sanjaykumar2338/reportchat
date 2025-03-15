@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->string('location');
             $table->string('phone');
             $table->string('email');
-            $table->json('images')->nullable();
+            $table->json('image')->nullable();
             $table->enum('status', ['open', 'closed'])->default('open'); // Track if chat is active
             $table->timestamps();
         });
