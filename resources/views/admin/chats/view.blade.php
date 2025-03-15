@@ -10,7 +10,7 @@
     <p><strong>Status:</strong> <span class="badge bg-{{ $chat->status == 'open' ? 'success' : 'danger' }}">{{ ucfirst($chat->status) }}</span></p>
     
     <h4>Messages</h4>
-    <div class="border p-3 mb-3" style="max-height: 300px; overflow-y: auto;">
+    <div class="border p-3 mb-3" id="chat-box" style="max-height: 300px; overflow-y: auto;">
         @foreach($chat->messages as $message)
             <div class="mb-2">
                 <strong>{{ $message->is_admin ? 'Admin' : 'User' }}:</strong> {{ $message->message }}
@@ -31,4 +31,30 @@
         <button type="submit" class="btn btn-primary">Send</button>
     </form>
 </div>
+
+<script src="https://js.pusher.com/7.0/pusher.min.js"></script>
+<script>
+    var chatId = "{{ $chat->id }}"; // Get chat ID from Blade
+    var pusher = new Pusher("{{ env('PUSHER_APP_KEY') }}", {
+        cluster: "{{ env('PUSHER_APP_CLUSTER') }}",
+        forceTLS: true
+    });
+
+    var channel = pusher.subscribe("chat." + chatId);
+    channel.bind("App\\Events\\MessageSent", function (data) {
+        let chatBox = document.getElementById("chat-box");
+
+        let newMessage = `
+            <div class="mb-2">
+                <strong>${data.is_admin ? 'Admin' : 'User'}:</strong> 
+                ${data.message}
+                ${data.image ? `<br><img src="${data.image}" width="100">` : ''}
+            </div>
+        `;
+
+        chatBox.innerHTML += newMessage;
+        chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest message
+    });
+</script>
+
 @endsection

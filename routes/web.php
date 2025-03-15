@@ -6,9 +6,11 @@ use Illuminate\Support\Facades\Route;
 
 // Admin Login Routes (Using Sessions)
 Route::get('/', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
+Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
+
 Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
 Route::post('/admin/login', [AdminAuthController::class, 'login']);
-Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+Route::get('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 
 // Admin Panel Routes (Protected)
 Route::middleware(['auth', 'admin'])->group(function () {

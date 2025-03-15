@@ -83,22 +83,43 @@ class ChatController extends Controller
     // Send a message (User)
     public function sendMessage(Request $request, $chat_id)
     {
-        $validatedData = $request->validate([
-            'message' => 'nullable|string',
-            'image' => 'nullable|string', // Accept base64 encoded images
-        ]);
+        try {
+            // Validate that either message or image is required
+            $validatedData = $request->validate([
+                'message' => 'nullable|string',
+                'image' => 'nullable|string', // Accept base64 encoded images
+            ]);
 
+            // If both message and image are missing, return an error
+            if (empty($validatedData['message']) && empty($validatedData['image'])) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => ['message' => ['Either a message or an image is required.']]
+                ], 422);
+            }
+
+        } catch (ValidationException $e) {
+            // Return validation errors as JSON response
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        }
+
+        // Find chat
         $chat = Chat::where('id', $chat_id)->where('user_id', Auth::id())->firstOrFail();
 
+        // Handle base64 image
         $imagePath = null;
         if (!empty($validatedData['image'])) {
             $imagePath = $this->saveBase64Image($validatedData['image']);
         }
 
+        // Create new chat message
         $message = ChatMessage::create([
             'chat_id' => $chat->id,
             'user_id' => Auth::id(),
-            'message' => $validatedData['message'],
+            'message' => $validatedData['message'] ?? null, // If empty, store null
             'image' => $imagePath,
             'is_admin' => false,
         ]);
@@ -106,7 +127,11 @@ class ChatController extends Controller
         // Dispatch event for real-time broadcasting
         broadcast(new MessageSent($message))->toOthers();
 
-        return response()->json(['message' => 'Message sent', 'chat' => $message], 201);
+        // Return success response
+        return response()->json([
+            'message' => 'Message sent successfully',
+            'chat' => $message
+        ], 201);
     }
 
     // Save Base64 encoded image to storage and return the URL

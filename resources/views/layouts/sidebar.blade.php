@@ -51,5 +51,7 @@
        class="{{ request()->is('admin/users') || request()->is('admin/users/*') ? 'active' : '' }}">
        Users
     </a>
+    
+    <a class="" href="{{ route('admin.logout') }}">Logout</a>
 </div>
 
