@@ -15,7 +15,7 @@ class Chat extends Model
         'location',
         'phone',
         'email',
-        'images',
+        'image',
         'status',
     ];
 
@@ -25,6 +25,6 @@ class Chat extends Model
 
     public function messages()
     {
-        return $this->hasMany(ChatMessage::class);
+        return $this->hasMany(ChatMessage::class, 'chat_id');
     }
 }
