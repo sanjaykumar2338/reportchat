@@ -18,3 +18,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/chats/{chat_id}/admin-reply', [ChatController::class, 'adminReply']); // Admin replies
     Route::get('/chats', [ChatController::class, 'getChatsList']);
 });
+
+
