@@ -33,4 +33,16 @@
         </tbody>
     </table>
     {{ $users->links('vendor.pagination.bootstrap-5') }}</div>
+
+    <script>
+       document.addEventListener("DOMContentLoaded", function () {
+            let elements = document.querySelectorAll('.text-muted'); // Select all elements with class 'text-muted'
+            
+            elements.forEach(element => {
+                if (element.parentElement) { 
+                    element.parentElement.style.cssText += "margin-left: 175px !important;"; // Apply margin-left to the parent
+                }
+            });
+        });
+    </script>
 @endsection

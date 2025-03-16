@@ -34,4 +34,17 @@ class AdminChatController extends Controller
 
         return redirect()->route('admin.view.chat', $chat_id)->with('success', 'Message sent successfully.');
     }
+
+    public function updateStatus(Request $request, $chat_id)
+    {
+        $request->validate([
+            'status' => 'required|in:open,pending,refused,closed',
+        ]);
+
+        $chat = Chat::findOrFail($chat_id);
+        $chat->status = $request->status;
+        $chat->save();
+
+        return response()->json(['success' => true, 'message' => 'Status updated successfully.']);
+    }
 }

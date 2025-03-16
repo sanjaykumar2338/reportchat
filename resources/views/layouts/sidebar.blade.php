@@ -44,7 +44,7 @@
 
     <a href="{{ route('admin.chats') }}" 
        class="{{ request()->is('admin/chats') || request()->is('admin/chat/*') ? 'active' : '' }}">
-       Chats
+       Reports
     </a>
 
     <a href="{{ route('admin.users') }}" 

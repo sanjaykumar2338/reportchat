@@ -19,6 +19,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/chats', [AdminChatController::class, 'index'])->name('admin.chats');
     Route::get('/admin/chat/{chat_id}', [AdminChatController::class, 'viewChat'])->name('admin.view.chat');
     Route::post('/admin/chat/{chat_id}/send', [AdminChatController::class, 'sendMessage'])->name('admin.send.message');
+    Route::post('/admin/chats/{chat_id}/update-status', [AdminChatController::class, 'updateStatus'])->name('admin.update.status');
 
     // Admin Users Management
     Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users');
