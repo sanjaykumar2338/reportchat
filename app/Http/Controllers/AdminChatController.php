@@ -38,7 +38,7 @@ class AdminChatController extends Controller
     public function updateStatus(Request $request, $chat_id)
     {
         $request->validate([
-            'status' => 'required|in:open,pending,refused,closed',
+            'status' => 'required|in:pending,refused,solved',
         ]);
 
         $chat = Chat::findOrFail($chat_id);
