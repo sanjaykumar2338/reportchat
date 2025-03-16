@@ -45,7 +45,7 @@ class ChatController extends Controller
             'phone' => $validatedData['phone'],
             'email' => $validatedData['email'],
             'image' => $imagePath, // Store correct image path
-            'status' => 'open',
+            'status' => 'pending',
         ]);                
 
         return response()->json([
