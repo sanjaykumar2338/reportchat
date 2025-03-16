@@ -235,7 +235,7 @@ class ChatController extends Controller
         }
 
         // Fetch filtered results
-        $chats = $query->orderBy('created_at', 'desc')->paginate(10);
+        $chats = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'message' => 'Chats retrieved successfully',

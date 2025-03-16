@@ -38,12 +38,10 @@
             </div>
         @endforeach
     </div>
-
-    <h4>Send a Message</h4>
     <form id="message-form">
         @csrf
         <div class="mb-3">
-            <label class="form-label">Message:</label>
+            <label class="form-label">Enter Message:</label>
             <textarea name="message" class="form-control" required></textarea>
         </div>
         <button type="submit" class="btn btn-primary">Send</button>
