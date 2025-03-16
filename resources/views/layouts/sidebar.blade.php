@@ -35,8 +35,10 @@
 </style>
 
 <div class="sidebar">
-    <h4 class="text-white text-center">Admin Panel</h4>
-
+<h5 class="text-primary text-center fw-bold">
+    <u style="color: #ff9800;">SafeTower Naucalpan</u>
+</h5>
+    <br>
     <a href="{{ route('admin.dashboard') }}" 
        class="{{ request()->is('admin/dashboard') ? 'active' : '' }}">
        Dashboard
