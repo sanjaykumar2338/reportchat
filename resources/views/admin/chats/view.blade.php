@@ -107,7 +107,7 @@
                     chatBox.appendChild(messageDiv);
                 });
 
-                chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest message
+                //chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest message
             })
             .catch(error => console.error("Error fetching messages:", error));
     }
