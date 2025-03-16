@@ -53,48 +53,68 @@
 
 <!-- Chatbox Auto-Refresh Every 10s -->
 <script>
+    function formatTimestamp(timestamp) {
+        let messageDate = new Date(timestamp);
+        let today = new Date();
+        
+        // If the message is from today, show time only (HH:MM AM/PM)
+        if (
+            messageDate.getDate() === today.getDate() &&
+            messageDate.getMonth() === today.getMonth() &&
+            messageDate.getFullYear() === today.getFullYear()
+        ) {
+            return messageDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
+        } 
+        // Otherwise, show only the date (DD MMM YYYY)
+        else {
+            return messageDate.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+        }
+    }
+
     function fetchMessages() {
-    let chatId = "{{ $chat->id }}";
-    let loggedUserId = "{{ auth()->id() }}"; // Get logged-in user ID
+        let chatId = "{{ $chat->id }}";
+        let loggedUserId = "{{ auth()->id() }}"; // Get logged-in user ID
 
-    fetch(`/admin/chats/${chatId}/messages`)
-        .then(response => response.json())
-        .then(data => {
-            let chatBox = document.getElementById("chat-box");
-            chatBox.innerHTML = ""; // Clear old messages
+        fetch(`/admin/chats/${chatId}/messages`)
+            .then(response => response.json())
+            .then(data => {
+                let chatBox = document.getElementById("chat-box");
+                chatBox.innerHTML = ""; // Clear old messages
 
-            data.messages.forEach(message => {
-                let messageDiv = document.createElement("div");
+                data.messages.forEach(message => {
+                    let messageDiv = document.createElement("div");
 
-                // Determine message alignment (current user -> right, others -> left)
-                let isCurrentUser = message.user_id == loggedUserId;
-                let isAdmin = message.is_admin;
+                    let isCurrentUser = message.user_id == loggedUserId;
+                    let isAdmin = message.is_admin;
 
-                messageDiv.classList.add("chat-message");
-                messageDiv.classList.add(isAdmin ? "admin-message" : "user-message");
+                    messageDiv.classList.add("chat-message");
+                    messageDiv.classList.add(isAdmin ? "admin-message" : "user-message");
 
-                let messageBoxDiv = document.createElement("div");
-                messageBoxDiv.classList.add(isAdmin ? "admin-message-box" : "user-message-box");
+                    let messageBoxDiv = document.createElement("div");
+                    messageBoxDiv.classList.add(isAdmin ? "admin-message-box" : "user-message-box");
 
-                let username = isAdmin ? "Admin" : (message.user.name ? message.user.name : "User");
+                    let username = isAdmin ? "Admin" : (message.user.name ? message.user.name : "User");
+                    let timestamp = formatTimestamp(message.created_at); // Format timestamp
 
-                messageBoxDiv.innerHTML = `
-                    <p class="username">${username}</p>
-                    <p class="message-text">${message.message}</p>
-                    ${message.image ? `<br><img src="${message.image}" alt="Image" width="100">` : ''}
-                `;
+                    messageBoxDiv.innerHTML = `
+                        <p class="username">${username}</p>
+                        <p class="message-text">${message.message}</p>
+                        ${message.image ? `<br><img src="${message.image}" alt="Image" width="100">` : ''}
+                        <p class="message-time">${timestamp}</p> 
+                    `;
 
-                messageDiv.appendChild(messageBoxDiv);
-                chatBox.appendChild(messageDiv);
-            });
+                    messageDiv.appendChild(messageBoxDiv);
+                    chatBox.appendChild(messageDiv);
+                });
 
-            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest message
-        })
-        .catch(error => console.error("Error fetching messages:", error));
+                chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest message
+            })
+            .catch(error => console.error("Error fetching messages:", error));
     }
 
     // Auto-refresh every 10 seconds
     setInterval(fetchMessages, 10000);
+    fetchMessages();
 
     document.addEventListener("DOMContentLoaded", function () {
         let chatId = "{{ $chat->id }}";
