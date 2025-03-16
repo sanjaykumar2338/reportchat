@@ -4,13 +4,14 @@ namespace App\Events;
 
 use App\Models\ChatMessage;
 use Illuminate\Broadcasting\Channel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class MessageSent implements ShouldBroadcastNow
+class MessageSent implements ShouldBroadcast
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $message;
 
@@ -21,18 +22,19 @@ class MessageSent implements ShouldBroadcastNow
 
     public function broadcastOn()
     {
-        return new Channel('chat.' . $this->message->chat_id); // Broadcasting to a channel
+        return new Channel('chat.' . $this->message->chat_id);
     }
 
     public function broadcastWith()
     {
         return [
+            'id' => $this->message->id,
             'chat_id' => $this->message->chat_id,
-            'message' => $this->message->message,
             'user_id' => $this->message->user_id,
-            'is_admin' => (bool) $this->message->is_admin, 
+            'admin_id' => $this->message->admin_id,
+            'message' => $this->message->message,
             'image' => $this->message->image ? asset($this->message->image) : null,
-            'created_at' => $this->message->created_at->format('Y-m-d H:i:s'),
+            'created_at' => $this->message->created_at->toDateTimeString(),
         ];
     }
 }

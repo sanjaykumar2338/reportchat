@@ -107,6 +107,7 @@ class ChatController extends Controller
         }
 
         // Find chat
+        \Log::info('Broadcasting MessageSent Event', ['chat_id' => $chat_id]);
         $chat = Chat::where('id', $chat_id)->where('user_id', Auth::id())->firstOrFail();
 
         // Handle base64 image
@@ -207,6 +208,34 @@ class ChatController extends Controller
                     ->select('id', 'title', 'location', 'status', 'created_at')
                     ->orderBy('created_at', 'desc')
                     ->get();
+
+        return response()->json([
+            'message' => 'Chats retrieved successfully',
+            'chats' => $chats
+        ], 200);
+    }
+
+    public function searchChats(Request $request)
+    {
+        $validatedData = $request->validate([
+            'title' => 'nullable|string|max:255',
+            'status' => 'nullable|in:pending,solved,refused',
+        ]);
+
+        $query = Chat::query();
+
+        // Filter by title if provided
+        if (!empty($validatedData['title'])) {
+            $query->where('title', 'LIKE', '%' . $validatedData['title'] . '%');
+        }
+
+        // Filter by status if provided
+        if (!empty($validatedData['status'])) {
+            $query->where('status', $validatedData['status']);
+        }
+
+        // Fetch filtered results
+        $chats = $query->orderBy('created_at', 'desc')->paginate(10);
 
         return response()->json([
             'message' => 'Chats retrieved successfully',
