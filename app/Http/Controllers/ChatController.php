@@ -219,7 +219,7 @@ class ChatController extends Controller
     {
         $validatedData = $request->validate([
             'title' => 'nullable|string|max:255',
-            'status' => 'nullable|in:pending,solved,refused',
+            'status' => 'nullable|in:pending,solved,refused,open',
         ]);
 
         $query = Chat::query();
