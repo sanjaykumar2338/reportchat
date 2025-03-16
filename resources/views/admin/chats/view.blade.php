@@ -8,19 +8,22 @@
     <p><strong>Location:</strong> {{ $chat->location }}</p>
 
     <p><strong>Status:</strong> 
-        <span id="status-badge" class="badge bg-{{ $chat->status == 'open' ? 'success' : ($chat->status == 'pending' ? 'warning' : 'danger') }}">
-            {{ ucfirst($chat->status) }}
-        </span>
+    <span id="status-badge" class="badge bg-{{ 
+    ($chat->status == 'pending' ? 'warning' : 
+    ($chat->status == 'solved' ? 'primary' : 
+    ($chat->status == 'refused' ? 'danger' : 'secondary'))) }}">
+    {{ ucfirst($chat->status) }}
+    </span>
+
     </p>
 
     <!-- Status Dropdown -->
     <div class="mb-3">
         <label for="status" class="form-label"><strong>Change Status:</strong></label>
         <select id="status" class="form-control" data-chat-id="{{ $chat->id }}">
-            <option value="open" {{ $chat->status == 'open' ? 'selected' : '' }}>Open</option>
             <option value="pending" {{ $chat->status == 'pending' ? 'selected' : '' }}>Pending</option>
             <option value="refused" {{ $chat->status == 'refused' ? 'selected' : '' }}>Refused</option>
-            <option value="closed" {{ $chat->status == 'closed' ? 'selected' : '' }}>Closed</option>
+            <option value="solved" {{ $chat->status == 'solved' ? 'selected' : '' }}>Solved</option>
         </select>
     </div>
 

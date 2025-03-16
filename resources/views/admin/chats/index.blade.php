@@ -28,7 +28,7 @@
                 <td>{{ $chat->location }}</td>
                 <td>
                     <span class="badge bg-{{ 
-                        $chat->status == 'open' ? 'success' : 
+                        $chat->status == 'solved' ? 'success' : 
                         ($chat->status == 'pending' ? 'warning' : 
                         ($chat->status == 'refused' ? 'danger' : 'secondary')) 
                     }}" id="status-badge-{{ $chat->id }}">
