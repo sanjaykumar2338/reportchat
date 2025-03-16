@@ -25,19 +25,22 @@
     </div>
 
     <h4>Messages</h4>
-    <div class="border p-3 mb-3" id="chat-box" style="max-height: 300px; overflow-y: auto;">
+    <div class="border p-3 mb-3 chat-container" id="chat-box">
         @foreach($chat->messages as $message)
-            <div class="mb-2">
-                <strong>{{ $message->is_admin ? 'Admin' : 'User' }}:</strong> {{ $message->message }}
-                @if($message->image)
-                    <br><img src="{{ asset($message->image) }}" alt="Image" width="100">
-                @endif
+            <div class="chat-message {{ $message->is_admin ? 'admin-message' : 'user-message' }}">
+                <div class="{{ $message->is_admin ? 'admin-message-box' : 'user-message-box' }}">
+                    <p class="username">{{ $message->is_admin ? 'Admin' : $message->user->name }}</p>
+                    <p class="message-text">{{ $message->message }}</p>
+                    @if($message->image)
+                        <br><img src="{{ asset($message->image) }}" alt="Image" width="100">
+                    @endif
+                </div>
             </div>
         @endforeach
     </div>
 
     <h4>Send a Message</h4>
-    <form action="{{ route('admin.send.message', $chat->id) }}" method="POST">
+    <form id="message-form">
         @csrf
         <div class="mb-3">
             <label class="form-label">Message:</label>
@@ -46,6 +49,83 @@
         <button type="submit" class="btn btn-primary">Send</button>
     </form>
 </div>
+
+<!-- Chatbox Auto-Refresh Every 10s -->
+<script>
+    function fetchMessages() {
+    let chatId = "{{ $chat->id }}";
+    let loggedUserId = "{{ auth()->id() }}"; // Get logged-in user ID
+
+    fetch(`/admin/chats/${chatId}/messages`)
+        .then(response => response.json())
+        .then(data => {
+            let chatBox = document.getElementById("chat-box");
+            chatBox.innerHTML = ""; // Clear old messages
+
+            data.messages.forEach(message => {
+                let messageDiv = document.createElement("div");
+
+                // Determine message alignment (current user -> right, others -> left)
+                let isCurrentUser = message.user_id == loggedUserId;
+                let isAdmin = message.is_admin;
+
+                messageDiv.classList.add("chat-message");
+                messageDiv.classList.add(isAdmin ? "admin-message" : "user-message");
+
+                let messageBoxDiv = document.createElement("div");
+                messageBoxDiv.classList.add(isAdmin ? "admin-message-box" : "user-message-box");
+
+                let username = isAdmin ? "Admin" : (message.user.name ? message.user.name : "User");
+
+                messageBoxDiv.innerHTML = `
+                    <p class="username">${username}</p>
+                    <p class="message-text">${message.message}</p>
+                    ${message.image ? `<br><img src="${message.image}" alt="Image" width="100">` : ''}
+                `;
+
+                messageDiv.appendChild(messageBoxDiv);
+                chatBox.appendChild(messageDiv);
+            });
+
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest message
+        })
+        .catch(error => console.error("Error fetching messages:", error));
+    }
+
+    // Auto-refresh every 10 seconds
+    setInterval(fetchMessages, 10000);
+
+    document.addEventListener("DOMContentLoaded", function () {
+        let chatId = "{{ $chat->id }}";
+        let messageForm = document.getElementById("message-form");
+        let messageInput = document.querySelector("textarea[name='message']");
+
+        messageForm.addEventListener("submit", function (e) {
+            e.preventDefault(); // Prevent default form submission
+
+            let messageText = messageInput.value.trim(); // Get message input value
+
+            if (messageText === "") return; // Prevent empty messages
+
+            fetch(`/admin/chats/${chatId}/messages`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                },
+                body: JSON.stringify({ message: messageText }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    messageInput.value = ""; // Clear message input field after sending
+                    fetchMessages(); // Refresh chatbox with the new message
+                }
+            })
+            .catch(error => console.error("Error sending message:", error));
+        });
+    });
+</script>
 
 <!-- AJAX to Update Status -->
 <script>
@@ -79,5 +159,45 @@
         });
     });
 </script>
+
+<style>
+    .chat-message {
+        display: flex;
+        margin-bottom: 10px;
+    }
+
+    .admin-message-box {
+        background-color: #f1f1f1;
+        padding: 10px;
+        border-radius: 10px;
+        max-width: 60%;
+    }
+
+    .user-message-box {
+        background-color: #007bff;
+        color: white;
+        padding: 10px;
+        border-radius: 10px;
+        max-width: 60%;
+        margin-left: auto; /* Moves user messages to the right */
+    }
+
+    .username {
+        font-weight: bold;
+        margin-bottom: 3px;
+    }
+
+    .message-text {
+        margin: 0;
+    }
+
+    .chat-container {
+        max-height: 300px;  /* Adjust this height if needed */
+        overflow-y: auto;   /* Enables vertical scrolling */
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+    }
+</style>
 
 @endsection

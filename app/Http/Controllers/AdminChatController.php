@@ -19,7 +19,7 @@ class AdminChatController extends Controller
         return view('admin.chats.view', compact('chat'));
     }
 
-    public function sendMessage(Request $request, $chat_id)
+    public function sendMessage11(Request $request, $chat_id)
     {
         $request->validate([
             'message' => 'required|string',
@@ -46,5 +46,39 @@ class AdminChatController extends Controller
         $chat->save();
 
         return response()->json(['success' => true, 'message' => 'Status updated successfully.']);
+    }
+
+    public function fetchMessages($chat_id)
+    {
+        $chat = Chat::with(['messages.user']) // Include user details
+            ->findOrFail($chat_id);
+
+        return response()->json([
+            'success' => true,
+            'messages' => $chat->messages
+        ]);
+    }
+
+    public function sendMessage(Request $request, $chat_id)
+    {
+        // Validate request
+        $validatedData = $request->validate([
+            'message' => 'required|string',
+        ]);
+
+        // Find chat
+        $chat = Chat::findOrFail($chat_id);
+        $chat->messages()->create([
+            'admin_id' => auth()->id(),
+            'message' => $request->message,
+            'is_admin' => true,
+        ]);
+
+        // Return JSON response
+        return response()->json([
+            'success' => true,
+            'message' => 'Message sent successfully',
+            'chat_message' => $chat,
+        ], 201);
     }
 }
