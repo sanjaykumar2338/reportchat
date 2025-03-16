@@ -10,7 +10,7 @@
     <p><strong>Status:</strong> 
     <span id="status-badge" class="badge bg-{{ 
     ($chat->status == 'pending' ? 'warning' : 
-    ($chat->status == 'solved' ? 'primary' : 
+    ($chat->status == 'solved' ? 'success' : 
     ($chat->status == 'refused' ? 'danger' : 'secondary'))) }}">
     {{ ucfirst($chat->status) }}
     </span>
@@ -186,6 +186,7 @@
     .username {
         font-weight: bold;
         margin-bottom: 3px;
+        min-width: 100px;
     }
 
     .message-text {
