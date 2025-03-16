@@ -7,11 +7,25 @@ use Illuminate\Http\Request;
 
 class AdminChatController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $chats = Chat::orderBy('created_at', 'desc')->paginate(10);
+        $query = Chat::query();
+    
+        // Apply search filter
+        if ($request->has('search') && !empty($request->search)) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+    
+        // Apply status filter
+        if ($request->has('status') && !empty($request->status)) {
+            $query->where('status', $request->status);
+        }
+    
+        // Fetch chats with pagination
+        $chats = $query->orderBy('created_at', 'desc')->paginate(10);
+    
         return view('admin.chats.index', compact('chats'));
-    }
+    }    
 
     public function viewChat($chat_id)
     {
