@@ -113,7 +113,7 @@
     }
 
     // Auto-refresh every 10 seconds
-    setInterval(fetchMessages, 10000);
+    setInterval(fetchMessages, 5000);
     fetchMessages();
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -141,6 +141,11 @@
                 if (data.success) {
                     messageInput.value = ""; // Clear message input field after sending
                     fetchMessages(); // Refresh chatbox with the new message
+                    
+                    setTimeout(() => {
+                        let chatBox = document.getElementById("chat-box");
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    }, 500);
                 }
             })
             .catch(error => console.error("Error sending message:", error));
