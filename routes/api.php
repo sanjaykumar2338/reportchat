@@ -21,6 +21,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/chats/{chat_id}/messages', [ChatController::class, 'sendMessage']); // User sends message
     Route::post('/chats/{chat_id}/admin-reply', [ChatController::class, 'adminReply']); // Admin replies
     Route::get('/chats', [ChatController::class, 'getChatsList']);
+    Route::get('/chats/searching', [ChatController::class, 'searchChats2']); // Search chats
 });
 
-Route::get('/chats/search', [ChatController::class, 'searchChats']); // Search chats
+

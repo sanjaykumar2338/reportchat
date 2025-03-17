@@ -215,7 +215,7 @@ class ChatController extends Controller
         ], 200);
     }
 
-    public function searchChats(Request $request)
+    public function searchChats2(Request $request)
     {
         $validatedData = $request->validate([
             'title' => 'nullable|string|max:255',
