@@ -166,7 +166,7 @@ class ChatController extends Controller
         }
 
         return null;
-    }   
+    }
 
     // Admin sends a reply
     public function adminReply(Request $request, $chat_id)
