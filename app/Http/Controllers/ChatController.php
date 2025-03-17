@@ -143,27 +143,30 @@ class ChatController extends Controller
                 $imageType = $matches[1]; // Extract image type (png, jpg, etc.)
                 $base64String = substr($base64String, strpos($base64String, ',') + 1);
                 $base64String = base64_decode($base64String);
-    
+
                 if ($base64String === false) {
                     return null; // Invalid base64 data
                 }
-    
+
                 // Generate unique file name
                 $fileName = 'uploads/messages/' . uniqid() . '.' . $imageType;
-    
+
                 // Store image in Laravel storage (public disk)
                 Storage::disk('public')->put($fileName, $base64String);
-    
-                // Return full URL of the stored image
-                return asset('storage/' . $fileName);
+
+                // Ensure the correct asset URL is returned
+                $imageUrl = asset('storage/' . $fileName);
+                $imageUrl = str_replace('//storage', '/storage', $imageUrl); // Fix double slashes
+
+                return $imageUrl;
             }
         } catch (\Exception $e) {
             Log::error('Base64 Image Save Error: ' . $e->getMessage());
             return null;
         }
-    
+
         return null;
-    }    
+    }   
 
     // Admin sends a reply
     public function adminReply(Request $request, $chat_id)
