@@ -118,7 +118,7 @@
     setTimeout(() => {
         let chatBox = document.getElementById("chat-box");
         chatBox.scrollTop = chatBox.scrollHeight;
-    }, 1000);
+    }, 2000);
 
     document.addEventListener("DOMContentLoaded", function () {
         let chatId = "{{ $chat->id }}";
@@ -149,7 +149,7 @@
                     setTimeout(() => {
                         let chatBox = document.getElementById("chat-box");
                         chatBox.scrollTop = chatBox.scrollHeight;
-                    }, 500);
+                    }, 2000);
                 }
             })
             .catch(error => console.error("Error sending message:", error));
