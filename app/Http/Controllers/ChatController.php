@@ -69,7 +69,7 @@ class ChatController extends Controller
         $chat->messages = $chat->messages->map(function ($message) {
             if (!empty($message->image)) {
                 // Remove double slashes and fix URL formatting
-                $message->image = asset(trim(str_replace('//', '/', $message->image), '/'));
+                //$message->image = asset(trim(str_replace('//', '/', $message->image), '/'));
             }
             return $message;
         });
