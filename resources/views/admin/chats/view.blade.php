@@ -104,7 +104,7 @@
                                 <img src="${message.image}" alt="Image" class="chat-image" width="100">
                             </a>
                             <br>
-                            <a href="${message.image}" download class="btn btn-sm btn-primary mt-2">Download</a>
+                            <a style="display:none;" href="${message.image}" download class="btn btn-sm btn-primary mt-2">Download</a>
                         `;
                     }
 
