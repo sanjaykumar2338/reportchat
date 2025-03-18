@@ -98,9 +98,9 @@
 
                     messageBoxDiv.innerHTML = `
                         <p class="username">${username}</p>
-                        <p class="message-text">${message.message}</p>
+                        ${message.message ? `<p class="message-text">${message.message}</p>` : ''} 
                         ${message.image ? `<br><img src="${message.image}" alt="Image" width="100">` : ''}
-                        <p class="message-time">${timestamp}</p> 
+                        <p class="message-time">${timestamp}</p>
                     `;
 
                     messageDiv.appendChild(messageBoxDiv);
@@ -115,6 +115,7 @@
     // Auto-refresh every 10 seconds
     setInterval(fetchMessages, 5000);
     fetchMessages();
+
     setTimeout(() => {
         let chatBox = document.getElementById("chat-box");
         chatBox.scrollTop = chatBox.scrollHeight;
