@@ -127,11 +127,14 @@
     // Auto-refresh every 10 seconds
     setInterval(fetchMessages, 5000);
     fetchMessages();
-
-    setTimeout(() => {
-        let chatBox = document.getElementById("chat-box");
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }, 2000);
+    
+    takemeup();
+    function takemeup(){
+        setTimeout(() => {
+            let chatBox = document.getElementById("chat-box");
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }, 2000);
+    }
 
     document.addEventListener("DOMContentLoaded", function () {
         let chatId = "{{ $chat->id }}";
@@ -158,11 +161,7 @@
                 if (data.success) {
                     messageInput.value = ""; // Clear message input field after sending
                     fetchMessages(); // Refresh chatbox with the new message
-                    
-                    setTimeout(() => {
-                        let chatBox = document.getElementById("chat-box");
-                        chatBox.scrollTop = chatBox.scrollHeight;
-                    }, 2000);
+                    takemeup();
                 }
             })
             .catch(error => console.error("Error sending message:", error));
