@@ -70,14 +70,6 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-4">
-                <div class="card bg-warning text-white">
-                    <div class="card-body">
-                        <h5>Active Sessions</h5>
-                        <h3>{{ $activeSessions }}</h3>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
