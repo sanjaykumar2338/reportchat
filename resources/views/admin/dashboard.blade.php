@@ -57,7 +57,7 @@
             <div class="col-lg-4">
                 <div class="card bg-primary text-white">
                     <div class="card-body">
-                        <h5>Total Chats</h5>
+                        <h5>Total Reports</h5>
                         <h3>{{ $totalChats }}</h3>
                     </div>
                 </div>
