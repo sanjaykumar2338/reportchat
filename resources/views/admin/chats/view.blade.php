@@ -125,7 +125,7 @@
     }
 
     // Auto-refresh every 10 seconds
-    setInterval(fetchMessages, 5000);
+    //setInterval(fetchMessages, 5000);
     fetchMessages();
     
     takemeup();
@@ -232,6 +232,7 @@
 
     .message-text {
         margin: 0;
+        font-size: 18px;
     }
 
     .chat-container {
