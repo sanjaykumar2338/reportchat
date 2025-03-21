@@ -192,7 +192,7 @@
                     
                     // Change badge color dynamically
                     statusBadge.className = "badge bg-" + 
-                        (newStatus === "open" ? "success" :
+                        (newStatus === "solved" ? "success" :
                         (newStatus === "pending" ? "warning" :
                         (newStatus === "refused" ? "danger" : "secondary")));
                 }
