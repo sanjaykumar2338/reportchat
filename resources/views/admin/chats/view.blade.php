@@ -125,7 +125,7 @@
     }
 
     // Auto-refresh every 10 seconds
-    //setInterval(fetchMessages, 5000);
+    setInterval(fetchMessages, 5000);
     fetchMessages();
     
     takemeup();
