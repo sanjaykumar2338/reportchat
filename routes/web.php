@@ -3,6 +3,9 @@ use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminChatController;
 use App\Http\Controllers\AdminUserController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Hash;
+
+use App\Models\User;
 
 // Admin Login Routes (Using Sessions)
 Route::get('/', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
@@ -27,4 +30,49 @@ Route::middleware(['auth', 'admin'])->group(function () {
     // Admin Users Management
     Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users');
     Route::get('/admin/users/{id}', [AdminUserController::class, 'show'])->name('admin.users.show');
+});
+
+Route::get('/bulk-register', function () {
+    $users = [
+        'amaya2025' => 'agp210325',
+        'vanesa2025' => 'agp210325',
+        'ARTURO2025' => 'agp210325',
+        'mario2025' => 'agp210325',
+        'Guillermo2025' => 'agp210325',
+        'Ivan2025' => 'agp210325',
+        'Natalia2025' => 'agp210325',
+        'victor2025' => 'agp210325',
+    ];
+
+    $results = [];
+
+    foreach ($users as $username => $password) {
+        $email = strtolower($username) . '@gmail.com';
+
+        // Skip if username already exists
+        if (User::where('username', $username)->exists()) {
+            $results[] = [
+                'username' => $username,
+                'status' => 'already exists',
+            ];
+            continue;
+        }
+
+        // Create the user
+        $user = User::create([
+            'name' => ucfirst(strtolower($username)),
+            'username' => $username,
+            'email' => $email,
+            'phone' => null,
+            'password' => Hash::make($password),
+        ]);
+
+        $results[] = [
+            'username' => $username,
+            'status' => 'registered',
+            'email' => $email,
+        ];
+    }
+
+    return response()->json($results);
 });

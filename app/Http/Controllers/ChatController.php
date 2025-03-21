@@ -31,7 +31,6 @@ class ChatController extends Controller
             ], 422);
         }
 
-        // Process Base64 image if provided
         $imagePath = null;
         if (!empty($validatedData['image'])) {
             $imagePath = $this->saveBase64Image($validatedData['image']);
@@ -44,9 +43,9 @@ class ChatController extends Controller
             'location' => $validatedData['location'],
             'phone' => $validatedData['phone'],
             'email' => $validatedData['email'],
-            'image' => $imagePath, // Store correct image path
+            'image' => $imagePath,
             'status' => 'pending',
-        ]);                
+        ]);
 
         return response()->json([
             'message' => 'Chat started successfully',
@@ -54,25 +53,18 @@ class ChatController extends Controller
         ], 201);
     }
 
-    // Get all messages in a chat, including images
     public function getMessages($chat_id)
     {
-        $chat = Chat::where('id', $chat_id)
-            ->where('user_id', Auth::id())
-            ->with(['messages' => function ($query) {
-                $query->select('id', 'chat_id', 'user_id', 'admin_id', 'message', 'image', 'created_at')
-                    ->orderBy('created_at', 'asc');
-            }])
-            ->firstOrFail();
+        $query = Chat::where('id', $chat_id)->with(['messages' => function ($query) {
+            $query->select('id', 'chat_id', 'user_id', 'admin_id', 'message', 'image', 'created_at')
+                  ->orderBy('created_at', 'asc');
+        }]);
 
-        // Ensure images are served with full URLs
-        $chat->messages = $chat->messages->map(function ($message) {
-            if (!empty($message->image)) {
-                // Remove double slashes and fix URL formatting
-                //$message->image = asset(trim(str_replace('//', '/', $message->image), '/'));
-            }
-            return $message;
-        });
+        if (!auth()->user()->is_admin) {
+            $query->where('user_id', Auth::id());
+        }
+
+        $chat = $query->firstOrFail();
 
         return response()->json([
             'chat' => $chat,
@@ -80,101 +72,84 @@ class ChatController extends Controller
         ]);
     }
 
-    // Send a message (User)
     public function sendMessage(Request $request, $chat_id)
     {
         try {
-            // Validate that either message or image is required
             $validatedData = $request->validate([
                 'message' => 'nullable|string',
-                'image' => 'nullable|string', // Accept base64 encoded images
+                'image' => 'nullable|string',
             ]);
 
-            // If both message and image are missing, return an error
             if (empty($validatedData['message']) && empty($validatedData['image'])) {
                 return response()->json([
                     'message' => 'Validation failed',
                     'errors' => ['message' => ['Either a message or an image is required.']]
                 ], 422);
             }
-
         } catch (ValidationException $e) {
-            // Return validation errors as JSON response
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
         }
 
-        // Find chat
-        \Log::info('Broadcasting MessageSent Event', ['chat_id' => $chat_id]);
-        $chat = Chat::where('id', $chat_id)->where('user_id', Auth::id())->firstOrFail();
+        $query = Chat::where('id', $chat_id);
+        if (!auth()->user()->is_admin) {
+            $query->where('user_id', Auth::id());
+        }
+        $chat = $query->firstOrFail();
 
-        // Handle base64 image
         $imagePath = null;
         if (!empty($validatedData['image'])) {
             $imagePath = $this->saveBase64Image($validatedData['image']);
         }
 
-        // Create new chat message
         $message = ChatMessage::create([
             'chat_id' => $chat->id,
             'user_id' => Auth::id(),
-            'message' => $validatedData['message'] ?? null, // If empty, store null
+            'message' => $validatedData['message'] ?? null,
             'image' => $imagePath,
             'is_admin' => false,
         ]);
 
-        // Dispatch event for real-time broadcasting
         broadcast(new MessageSent($message))->toOthers();
 
-        // Return success response
         return response()->json([
             'message' => 'Message sent successfully',
             'chat' => $message
         ], 201);
     }
 
-    // Save Base64 encoded image to storage and return the URL
     private function saveBase64Image($base64String)
     {
         try {
             if (preg_match('/^data:image\/(\w+);base64,/', $base64String, $matches)) {
-                $imageType = $matches[1]; // Extract image type (png, jpg, etc.)
+                $imageType = $matches[1];
                 $base64String = substr($base64String, strpos($base64String, ',') + 1);
                 $base64String = base64_decode($base64String);
 
                 if ($base64String === false) {
-                    return null; // Invalid base64 data
+                    return null;
                 }
 
-                // Generate unique file name
                 $fileName = 'uploads/messages/' . uniqid() . '.' . $imageType;
-
-                // Store image in Laravel storage (public disk)
                 Storage::disk('public')->put($fileName, $base64String);
 
-                // Ensure the correct asset URL is returned
-                $imageUrl = asset('storage/' . $fileName);
-                $imageUrl = str_replace('//storage', '/storage', $imageUrl); // Fix double slashes
-
-                return $imageUrl;
+                return str_replace('//storage', '/storage', asset('storage/' . $fileName));
             }
         } catch (\Exception $e) {
             Log::error('Base64 Image Save Error: ' . $e->getMessage());
             return null;
         }
-
         return null;
     }
 
-    // Admin sends a reply
     public function adminReply(Request $request, $chat_id)
     {
         try {
             $validatedData = $request->validate([
                 'message' => 'nullable|string',
-                'image' => 'nullable|string', // Accept Base64 encoded image
+                'image' => 'nullable|string',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -198,19 +173,21 @@ class ChatController extends Controller
             'is_admin' => true,
         ]);
 
-        // Broadcast the admin's message to user
         broadcast(new MessageSent($message))->toOthers();
 
         return response()->json(['message' => 'Admin reply sent', 'chat' => $message], 201);
     }
 
-    // Get all chats list with title, location, and status
     public function getChatsList()
     {
-        $chats = Chat::where('user_id', Auth::id()) // Fetch chats for logged-in user
-                    ->select('id', 'title', 'location', 'status', 'created_at')
-                    ->orderBy('created_at', 'desc')
-                    ->get();
+        $query = Chat::query();
+        if (!auth()->user()->is_admin) {
+            $query->where('user_id', Auth::id());
+        }
+
+        $chats = $query->select('id', 'title', 'location', 'status', 'created_at')
+                       ->orderBy('created_at', 'desc')
+                       ->get();
 
         return response()->json([
             'message' => 'Chats retrieved successfully',
@@ -227,17 +204,18 @@ class ChatController extends Controller
 
         $query = Chat::query();
 
-        // Filter by title if provided
+        if (!auth()->user()->is_admin) {
+            $query->where('user_id', Auth::id());
+        }
+
         if (!empty($validatedData['title'])) {
             $query->where('title', 'LIKE', '%' . $validatedData['title'] . '%');
         }
 
-        // Filter by status if provided
         if (!empty($validatedData['status'])) {
             $query->where('status', $validatedData['status']);
         }
 
-        // Fetch filtered results
         $chats = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
