@@ -53,6 +53,57 @@ class ChatController extends Controller
         ], 201);
     }
 
+    public function updateChat(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'chat_id' => 'required|integer|exists:chats,id',
+                'title' => 'nullable|string|max:255',
+                'description' => 'nullable|string',
+                'location' => 'nullable|string|max:255',
+                'phone' => 'nullable|string|max:15',
+                'email' => 'nullable|string|email|max:255',
+                'image' => 'nullable|string', // Base64 string
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        }
+
+        // Fetch the chat
+        $chat = Chat::find($validatedData['chat_id']);
+
+        if (!$chat) {
+            return response()->json(['message' => 'Chat not found'], 404);
+        }
+
+        // Optionally restrict update to current user
+        if (!auth()->user()->is_admin && $chat->user_id !== Auth::id()) {
+            return response()->json(['message' => 'Unauthorized access'], 403);
+        }
+
+        // Handle base64 image
+        if (!empty($validatedData['image'])) {
+            $chat->image = $this->saveBase64Image($validatedData['image']);
+        }
+
+        // Update other fields if provided
+        $chat->title = $validatedData['title'] ?? $chat->title;
+        $chat->description = $validatedData['description'] ?? $chat->description;
+        $chat->location = $validatedData['location'] ?? $chat->location;
+        $chat->phone = $validatedData['phone'] ?? $chat->phone;
+        $chat->email = $validatedData['email'] ?? $chat->email;
+
+        $chat->save();
+
+        return response()->json([
+            'message' => 'Chat updated successfully',
+            'chat' => $chat
+        ], 200);
+    }
+
     public function getMessages($chat_id)
     {
         $query = Chat::where('id', $chat_id)->with(['messages' => function ($query) {
