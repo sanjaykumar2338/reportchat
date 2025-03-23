@@ -18,10 +18,10 @@ class ChatController extends Controller
         try {
             $validatedData = $request->validate([
                 'title' => 'required|string|max:255',
-                'description' => 'required|string',
-                'location' => 'required|string|max:255',
-                'phone' => 'required|string|max:15',
-                'email' => 'required|string|email|max:255',
+                'description' => 'nullable|string',
+                'location' => 'nullable|string|max:255',
+                'phone' => 'nullable|string|max:15',
+                'email' => 'nullable|string|email|max:255',
                 'image' => 'nullable|string', // Accept single Base64 image string
             ]);
         } catch (ValidationException $e) {
