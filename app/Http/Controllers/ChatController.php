@@ -141,7 +141,7 @@ class ChatController extends Controller
     public function getMessages($chat_id)
     {
         $query = Chat::where('id', $chat_id)
-            ->where('created_at', '<=', Carbon::now()->subMinutes(2))
+            ->where('created_at', '<=', Carbon::now()->subMinutes(30))
             ->with(['messages' => function ($query) {
                 $query->select('id', 'chat_id', 'user_id', 'admin_id', 'message', 'image', 'created_at', 'is_admin')
                     ->orderBy('created_at', 'asc');
@@ -218,12 +218,15 @@ class ChatController extends Controller
         if (!auth()->user()->is_admin) {
             $query->where('user_id', Auth::id());
         }
+
         $chat = $query->firstOrFail();
 
         $imagePath = null;
         if (!empty($validatedData['image'])) {
             $imagePath = $this->saveBase64Image($validatedData['image']);
         }
+
+        $hasMessages = ChatMessage::where('chat_id', $chat->id)->exists();
 
         $message = ChatMessage::create([
             'chat_id' => $chat->id,
@@ -233,7 +236,22 @@ class ChatController extends Controller
             'is_admin' => false,
         ]);
 
-        broadcast(new MessageSent($message))->toOthers();
+        // Send system message if no previous messages and chat info is complete
+        $requiredFieldsFilled = $chat->title && $chat->description && $chat->location && $chat->phone && $chat->email;
+        if (!$hasMessages && $requiredFieldsFilled) {
+            $adminUser = \App\Models\User::where('is_admin', 1)->first();
+
+            ChatMessage::create([
+                'chat_id' => $chat->id,
+                'user_id' => $chat->user_id,
+                'admin_id' => $adminUser?->id ?? null,
+                'message' => 'Gracias por tu reporte. Será revisado en breve. Te contactaremos por este medio.',
+                'image' => null,
+                'is_admin' => true,
+            ]);
+        }
+
+        //broadcast(new MessageSent($message))->toOthers();
 
         return response()->json([
             'message' => 'Message sent successfully',
