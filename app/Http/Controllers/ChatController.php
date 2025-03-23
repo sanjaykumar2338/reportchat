@@ -125,7 +125,7 @@ class ChatController extends Controller
                     'is_admin' => true,
                 ]);
         
-                broadcast(new \App\Events\MessageSent($autoReply))->toOthers();
+                //broadcast(new \App\Events\MessageSent($autoReply))->toOthers();
             }
         }        
 
