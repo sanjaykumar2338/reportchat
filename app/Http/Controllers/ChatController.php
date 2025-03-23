@@ -120,6 +120,7 @@ class ChatController extends Controller
         
                 $autoReply = ChatMessage::create([
                     'chat_id' => $chat->id,
+                    'user_id' => $chat->user_id,
                     'admin_id' => $admin ? $admin->id : null, // Use admin ID if found
                     'message' => $autoMessage,
                     'is_admin' => true,
