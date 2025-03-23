@@ -230,7 +230,7 @@ class ChatController extends Controller
 
         $message = ChatMessage::create([
             'chat_id' => $chat->id,
-            'user_id' => Auth::id(),
+            'user_id' => $chat->user_id,
             'message' => $validatedData['message'] ?? null,
             'image' => $imagePath,
             'is_admin' => false,
