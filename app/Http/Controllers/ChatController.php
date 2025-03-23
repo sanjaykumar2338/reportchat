@@ -140,7 +140,7 @@ class ChatController extends Controller
     public function getMessages($chat_id)
     {
         $query = Chat::where('id', $chat_id)
-            ->where('created_at', '<=', Carbon::now()->subMinutes(5))
+            ->where('created_at', '<=', Carbon::now()->subMinutes(2))
             ->with(['messages' => function ($query) {
                 $query->select('id', 'chat_id', 'user_id', 'admin_id', 'message', 'image', 'created_at', 'is_admin')
                     ->orderBy('created_at', 'asc');
@@ -148,8 +148,16 @@ class ChatController extends Controller
 
         $chat = $query->first();
 
-        if ($chat && empty($chat->image) && $chat->messages->isEmpty()) {
-
+        if (
+            $chat &&
+            empty($chat->image) &&
+            $chat->messages->isEmpty() &&
+            $chat->title &&
+            $chat->description &&
+            $chat->location &&
+            $chat->phone &&
+            $chat->email
+        ) {
             // Get any admin user
             $admin = User::where('is_admin', 1)->first();
 
@@ -163,7 +171,7 @@ class ChatController extends Controller
                     'image' => null,
                 ]);
 
-                //broadcast(new MessageSent($message))->toOthers();
+                broadcast(new MessageSent($message))->toOthers();
             }
         }
 
