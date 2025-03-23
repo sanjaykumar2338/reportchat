@@ -74,31 +74,60 @@ class ChatController extends Controller
             ], 422);
         }
 
-        // Fetch the chat
         $chat = Chat::find($validatedData['chat_id']);
 
         if (!$chat) {
             return response()->json(['message' => 'Chat not found'], 404);
         }
 
-        // Optionally restrict update to current user
+        // Restrict update if not admin or owner
         if (!auth()->user()->is_admin && $chat->user_id !== Auth::id()) {
             return response()->json(['message' => 'Unauthorized access'], 403);
         }
 
-        // Handle base64 image
+        // Save image if present
         if (!empty($validatedData['image'])) {
             $chat->image = $this->saveBase64Image($validatedData['image']);
         }
 
-        // Update other fields if provided
+        // Update fields
         $chat->title = $validatedData['title'] ?? $chat->title;
         $chat->description = $validatedData['description'] ?? $chat->description;
         $chat->location = $validatedData['location'] ?? $chat->location;
         $chat->phone = $validatedData['phone'] ?? $chat->phone;
         $chat->email = $validatedData['email'] ?? $chat->email;
-
         $chat->save();
+
+        // Check if all required fields are now set
+        if (
+            $chat->title &&
+            $chat->description &&
+            $chat->location &&
+            $chat->phone &&
+            $chat->email &&
+            $chat->image
+        ) {
+            $autoMessage = 'Gracias por tu reporte. Será revisado en breve. Te contactaremos por este medio.';
+        
+            $alreadySent = ChatMessage::where('chat_id', $chat->id)
+                ->where('message', $autoMessage)
+                ->where('is_admin', true)
+                ->exists();
+        
+            if (!$alreadySent) {
+                // Fetch any admin user
+                $admin = \App\Models\User::where('is_admin', 1)->first();
+        
+                $autoReply = ChatMessage::create([
+                    'chat_id' => $chat->id,
+                    'admin_id' => $admin ? $admin->id : null, // Use admin ID if found
+                    'message' => $autoMessage,
+                    'is_admin' => true,
+                ]);
+        
+                broadcast(new \App\Events\MessageSent($autoReply))->toOthers();
+            }
+        }        
 
         return response()->json([
             'message' => 'Chat updated successfully',
