@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use App\Events\MessageSent;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class ChatController extends Controller
 {
@@ -138,6 +139,34 @@ class ChatController extends Controller
 
     public function getMessages($chat_id)
     {
+        $query = Chat::where('id', $chat_id)
+            ->where('created_at', '<=', Carbon::now()->subMinutes(5))
+            ->with(['messages' => function ($query) {
+                $query->select('id', 'chat_id', 'user_id', 'admin_id', 'message', 'image', 'created_at', 'is_admin')
+                    ->orderBy('created_at', 'asc');
+            }]);
+
+        $chat = $query->first();
+
+        if ($chat && empty($chat->image) && $chat->messages->isEmpty()) {
+
+            // Get any admin user
+            $admin = User::where('is_admin', 1)->first();
+
+            if ($admin) {
+                $message = ChatMessage::create([
+                    'chat_id' => $chat->id,
+                    'admin_id' => $admin->id,
+                    'user_id' => $chat->user_id,
+                    'message' => 'Gracias por tu reporte. Será revisado en breve. Te contactaremos por este medio.',
+                    'is_admin' => true,
+                    'image' => null,
+                ]);
+
+                //broadcast(new MessageSent($message))->toOthers();
+            }
+        }
+
         $query = Chat::where('id', $chat_id)->with(['messages' => function ($query) {
             $query->select('id', 'chat_id', 'user_id', 'admin_id', 'message', 'image', 'created_at', 'is_admin')
                   ->orderBy('created_at', 'asc');
