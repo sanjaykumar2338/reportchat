@@ -16,6 +16,7 @@ class ChatMessage extends Model
         'message',
         'image',
         'is_admin',
+        'is_read',
     ];
 
     public function chat()

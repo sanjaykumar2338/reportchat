@@ -176,10 +176,20 @@ class ChatController extends Controller
             }
         }
 
-        $query = Chat::where('id', $chat_id)->with(['messages' => function ($query) {
-            $query->select('id', 'chat_id', 'user_id', 'admin_id', 'message', 'image', 'created_at', 'is_admin')
-                  ->orderBy('created_at', 'asc');
-        }]);
+        $query = Chat::where('id', $chat_id)
+            ->with(['messages' => function ($q) {
+                $q->select('id', 'chat_id', 'user_id', 'admin_id', 'message', 'image', 'created_at', 'is_admin', 'is_read')
+                ->orderBy('created_at', 'asc');
+            }]);
+
+        $chat = $query->first();
+
+        // ✅ Update all unread messages to read after fetching
+        if ($chat) {
+            $chat->messages()
+                ->where('is_read', 0)
+                ->update(['is_read' => 1]);
+        }
 
         if (!auth()->user()->is_admin) {
             $query->where('user_id', Auth::id());
@@ -325,12 +335,23 @@ class ChatController extends Controller
         }
 
         $chats = $query->select('id', 'title', 'location', 'status', 'created_at')
-                       ->orderBy('created_at', 'desc')
-                       ->get();
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+
+        $formattedChats = $chats->map(function ($chat) {
+            return [
+                'id' => $chat->id,
+                'title' => $chat->title,
+                'location' => $chat->location,
+                'status' => $chat->status,
+                'created_at' => $chat->created_at,
+                'unread_count' => ChatMessage::where('chat_id', $chat->id)->where('is_read',0)->count()
+            ];
+        });
 
         return response()->json([
             'message' => 'Chats retrieved successfully',
-            'chats' => $chats
+            'chats' => $formattedChats
         ], 200);
     }
 

@@ -12,6 +12,7 @@ class AdminAuthController extends Controller
     // Show Admin Login Form
     public function showLoginForm()
     {
+        //echo \Hash::make('admin@123'); die;
         return view('admin.login');
     }
 
