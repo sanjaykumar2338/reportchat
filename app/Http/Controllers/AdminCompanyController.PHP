@@ -67,6 +67,7 @@ class AdminCompanyController extends Controller
         return redirect()->route('admin.companies.index')->with('success', 'Company deleted successfully.');
     }
 
+    
     public function sendNotification(Request $request)
     {
         $request->validate([
@@ -91,7 +92,6 @@ class AdminCompanyController extends Controller
                 'updated_at' => now(),
             ]);
         }
-        
 
         return response()->json([
             'status' => 'success',

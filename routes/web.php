@@ -32,7 +32,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/companies/send-notification', [\App\Http\Controllers\AdminCompanyController::class, 'sendNotification'])
     ->name('admin.companies.sendNotification');
     Route::resource('admin/companies', \App\Http\Controllers\AdminCompanyController::class)->names('admin.companies');
-    
 });
 
 Route::get('/bulk-register', function () {
