@@ -28,8 +28,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     ->name('admin.send.message');
 
     // Admin Users Management
-    Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users');
-    Route::get('/admin/users/{id}', [AdminUserController::class, 'show'])->name('admin.users.show');
+    Route::resource('/admin/users', \App\Http\Controllers\AdminUserController::class)->names('admin.users');
+    Route::post('/admin/companies/send-notification', [\App\Http\Controllers\AdminCompanyController::class, 'sendNotification'])
+    ->name('admin.companies.sendNotification');
+    Route::resource('admin/companies', \App\Http\Controllers\AdminCompanyController::class)->names('admin.companies');
 });
 
 Route::get('/bulk-register', function () {

@@ -20,6 +20,19 @@
 </nav>
 
 <!-- Main Content -->
+
+@if(session('success'))
+    <div class="alert alert-success" style="text-align:center;">
+        {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-error" style="text-align:center;">
+        {{ session('error') }}
+    </div>
+@endif
+
 <div class="container mt-4">
     @yield('content')
 </div>

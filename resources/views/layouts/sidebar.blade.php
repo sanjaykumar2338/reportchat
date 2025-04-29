@@ -49,9 +49,14 @@
        Reports
     </a>
 
-    <a href="{{ route('admin.users') }}" 
+    <a href="{{ route('admin.users.index') }}" 
        class="{{ request()->is('admin/users') || request()->is('admin/users/*') ? 'active' : '' }}">
        Users
+    </a>
+
+    <a href="{{ route('admin.companies.index') }}" 
+       class="{{ request()->is('admin/companies') || request()->is('admin/companies/*') ? 'active' : '' }}">
+       Companies
     </a>
     
     <a class="" href="{{ route('admin.logout') }}">Logout</a>

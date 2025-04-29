@@ -24,6 +24,8 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
+        'gcm_token',
+        'company',
     ];
 
     /**
@@ -47,5 +49,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function companyRelation()
+    {
+        return $this->belongsTo(Company::class, 'company');
     }
 }
