@@ -91,6 +91,7 @@ class AdminCompanyController extends Controller
                 'updated_at' => now(),
             ]);
         }
+        
 
         return response()->json([
             'status' => 'success',
