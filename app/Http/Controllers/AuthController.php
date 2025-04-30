@@ -18,6 +18,7 @@ class AuthController extends Controller
                 'email' => 'nullable|string|email|max:255|unique:users', // Email is optional
                 'phone' => 'nullable|string|max:15', // Phone is optional
                 'password' => 'required|string|min:6|confirmed',
+                'fcm_token' => 'nullable'
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -31,6 +32,7 @@ class AuthController extends Controller
             'username' => $validatedData['username'],
             'email' => $validatedData['email'] ?? null,
             'phone' => $validatedData['phone'] ?? null,
+            'fcm_token' => $validatedData['fcm_token'] ?? null,
             'password' => Hash::make($validatedData['password']),
         ]);
 
@@ -45,8 +47,9 @@ class AuthController extends Controller
     {
         try {
             $validatedData = $request->validate([
-                'username' => 'required|string', // Can be username or email
+                'username' => 'required|string',
                 'password' => 'required|string',
+                'fcm_token' => 'nullable'
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -55,15 +58,17 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Check if login is an email or username
-        $user = User::where('username', $validatedData['username'])
-                    ->first();
+        $user = User::where('username', $validatedData['username'])->first();
 
         if (!$user || !Hash::check($validatedData['password'], $user->password)) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
+
+        if ($validatedData['fcm_token']) {
+            $user->update(['fcm_token' => $validatedData['fcm_token']]);
+        }
 
         return response()->json([
             'message' => 'Login successful',
