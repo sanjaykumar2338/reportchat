@@ -68,6 +68,7 @@ class AdminCompanyController extends Controller
     }
 
     
+    
     public function sendNotification(Request $request)
     {
         $request->validate([
