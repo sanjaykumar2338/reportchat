@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use Illuminate\Http\Request;
+use Kreait\Firebase\Factory;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification;
+use Illuminate\Support\Facades\Storage;
 
 class AdminCompanyController extends Controller
 {
@@ -66,8 +70,6 @@ class AdminCompanyController extends Controller
 
         return redirect()->route('admin.companies.index')->with('success', 'Company deleted successfully.');
     }
-
-    
     
     public function sendNotification(Request $request)
     {
@@ -83,7 +85,13 @@ class AdminCompanyController extends Controller
 
         $users = \App\Models\User::whereIn('company', $companyIds)->get();
 
+        // Firebase setup from JSON file
+        $firebasePath = storage_path('app/firebase/firebase-credentials.json'); // make sure this path exists
+        $factory = (new Factory)->withServiceAccount($firebasePath);
+        $messaging = $factory->createMessaging();
+
         foreach ($users as $user) {
+            // Save to DB
             \DB::table('notifications')->insert([
                 'user_id' => $user->id,
                 'company_id' => $user->company,
@@ -92,6 +100,18 @@ class AdminCompanyController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            // Send FCM push if FCM token exists
+            if ($user->fcm_token) {
+                try {
+                    $message = CloudMessage::withTarget('token', $user->fcm_token)
+                        ->withNotification(Notification::create($request->title, $request->message));
+
+                    $messaging->send($message);
+                } catch (\Exception $e) {
+                    \Log::error("FCM send failed for user {$user->id}: " . $e->getMessage());
+                }
+            }
         }
 
         return response()->json([
