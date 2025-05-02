@@ -66,7 +66,7 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        if ($validatedData['fcm_token']) {
+        if (isset($validatedData['fcm_token'])) {
             $user->update(['fcm_token' => $validatedData['fcm_token']]);
         }
 
