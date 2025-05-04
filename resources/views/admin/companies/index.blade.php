@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(res => res.json())
         .then(data => {
             alert(data.message || 'Notification sent!');
-            location.reload();
+            //location.reload();
         })
         .catch(err => {
             alert('Error sending notification');
