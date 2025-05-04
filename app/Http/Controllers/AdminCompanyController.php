@@ -99,7 +99,7 @@ class AdminCompanyController extends Controller
             'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
         ]);
 
-        $oauth->setGrantType(OAuth2::GRANT_TYPE_JWT);
+        $oauth->setGrantType('urn:ietf:params:oauth:grant-type:jwt-bearer');
         $token = $oauth->fetchAuthToken();
 
         if (!isset($token['access_token'])) {
