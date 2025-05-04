@@ -141,7 +141,7 @@ class AdminCompanyController extends Controller
                     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
                     $result = curl_exec($ch);
 
-                    \Log::info('FCM Raw Response', ['user_id' => $user->id, 'res' => $response->body()]);
+                    \Log::info('FCM Raw Response', ['user_id' => $user->id, 'res' => $result->body()]);
                 } catch (\Exception $e) {
                     \Log::error("FCM send failed for user {$user->id}: " . $e->getMessage());
                 }
