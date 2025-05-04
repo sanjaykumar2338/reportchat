@@ -115,21 +115,31 @@ class AdminCompanyController extends Controller
 
             if ($user->face_token) {
                 try {
-                    $notificationPayload = [
-                        'message' => [
-                            'token' => $user->face_token,
-                            'notification' => [
-                                'title' => $request->title,
-                                'body' => $request->message,
-                            ]
-                        ]
-                    ];
 
-                    $response = Http::withToken($accessToken)
-                        ->withHeaders([
-                            'Content-Type' => 'application/json',
-                        ])
-                        ->post("https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send", $notificationPayload);
+                    $info = array(
+                        "message" => array(
+                            "token" => $user->face_token,
+                            "notification" => array(
+                                "title" => $request->title,
+                                "body" => $request->message,
+                            )
+                        )
+                    );
+
+                    $apiurl = 'https://fcm.googleapis.com/v1/projects/safetowernaucalpan-982e8/messages:send';
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, $apiurl);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                    curl_setopt($ch, CURLOPT_POST, 1);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($info));
+                    
+                    $headers = array(
+                            'Authorization: Bearer ' . $accessToken,
+                            'Content-Type: application/json'
+                        );
+                    
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                    $result = curl_exec($ch);
 
                     \Log::info('FCM Raw Response', ['user_id' => $user->id, 'res' => $response->body()]);
                 } catch (\Exception $e) {
