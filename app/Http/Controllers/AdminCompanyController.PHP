@@ -8,6 +8,8 @@ use Kreait\Firebase\Factory;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
 use Illuminate\Support\Facades\Storage;
+use Google\Auth\Credentials\ServiceAccountCredentials;
+use Illuminate\Support\Facades\Http;
 
 class AdminCompanyController extends Controller
 {
@@ -84,15 +86,22 @@ class AdminCompanyController extends Controller
             : explode(',', $request->companies);
 
         $users = \App\Models\User::whereIn('company', $companyIds)->get();
-        //echo "<pre>"; print_r($users); die;
 
-        // Firebase setup from JSON file
-        $firebasePath = storage_path('app/firebase/firebase-credentials.json'); // make sure this path exists
-        $factory = (new Factory)->withServiceAccount($firebasePath);
-        $messaging = $factory->createMessaging();
+        // 🔐 Step 1: Generate access token
+        $scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
+        $serviceAccountPath = storage_path('app/firebase/firebase-credentials.json');
 
+        $credentials = new ServiceAccountCredentials($scopes, $serviceAccountPath);
+        $tokenData = $credentials->fetchAuthToken();
+
+        if (!isset($tokenData['access_token'])) {
+            return response()->json(['status' => 'error', 'message' => 'FCM access token failed'], 500);
+        }
+
+        $accessToken = $tokenData['access_token'];
+
+        // 🔁 Step 2: Send FCM notification to each user
         foreach ($users as $user) {
-            // Save to DB
             \DB::table('notifications')->insert([
                 'user_id' => $user->id,
                 'company_id' => $user->company,
@@ -102,20 +111,20 @@ class AdminCompanyController extends Controller
                 'updated_at' => now(),
             ]);
 
-            
-            // Send FCM push if FCM token exists
-            //$face_token = 'fFuFCWbPQheST_8rpDB6DJ:APA91bGGBrrAdilC0ICT09d8Dru9WUG03kad-Z2dm7SgONcnzRbYRc3tJl_DYMbH0KowB99SjacpK8epHTD9rLgie6j_bQX6x226VgO-nQODmVbwGaLxvJg';
-
             if ($user->face_token) {
                 try {
-                    $message = CloudMessage::withTarget('token', $user->face_token)
-                        ->withNotification(Notification::create($request->title, $request->message));
+                    $response = Http::withToken($accessToken)
+                        ->post('https://fcm.googleapis.com/v1/projects/YOUR_PROJECT_ID/messages:send', [
+                            'message' => [
+                                'token' => $user->face_token,
+                                'notification' => [
+                                    'title' => $request->title,
+                                    'body' => $request->message,
+                                ]
+                            ]
+                        ]);
 
-                    $response = $messaging->send($message);
-                    \Log::info('FCM Response:', ['response' => $response]);
-
-                    \Log::error("FCM send.");
-
+                    \Log::info('FCM Raw Response', ['user_id' => $user->id, 'res' => $response->body()]);
                 } catch (\Exception $e) {
                     \Log::error("FCM send failed for user {$user->id}: " . $e->getMessage());
                 }
@@ -124,7 +133,7 @@ class AdminCompanyController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Notification sent to selected companies.',
+            'message' => 'Notifications sent using access token.',
         ]);
     }
 }
