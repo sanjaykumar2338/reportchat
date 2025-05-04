@@ -84,6 +84,7 @@ class AdminCompanyController extends Controller
             : explode(',', $request->companies);
 
         $users = \App\Models\User::whereIn('company', $companyIds)->get();
+        //echo "<pre>"; print_r($users); die;
 
         // Firebase setup from JSON file
         $firebasePath = storage_path('app/firebase/firebase-credentials.json'); // make sure this path exists
@@ -101,13 +102,20 @@ class AdminCompanyController extends Controller
                 'updated_at' => now(),
             ]);
 
+            
             // Send FCM push if FCM token exists
-            if ($user->fcm_token) {
+            //$face_token = 'fFuFCWbPQheST_8rpDB6DJ:APA91bGGBrrAdilC0ICT09d8Dru9WUG03kad-Z2dm7SgONcnzRbYRc3tJl_DYMbH0KowB99SjacpK8epHTD9rLgie6j_bQX6x226VgO-nQODmVbwGaLxvJg';
+
+            if ($user->face_token) {
                 try {
-                    $message = CloudMessage::withTarget('token', $user->fcm_token)
+                    $message = CloudMessage::withTarget('token', $user->face_token)
                         ->withNotification(Notification::create($request->title, $request->message));
 
-                    $messaging->send($message);
+                    $response = $messaging->send($message);
+                    \Log::info('FCM Response:', ['response' => $response]);
+
+                    \Log::error("FCM send.");
+
                 } catch (\Exception $e) {
                     \Log::error("FCM send failed for user {$user->id}: " . $e->getMessage());
                 }
