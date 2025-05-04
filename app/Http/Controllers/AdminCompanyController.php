@@ -102,6 +102,7 @@ class AdminCompanyController extends Controller
         $projectId = json_decode(file_get_contents($serviceAccountPath), true)['project_id'];
 
         // 🔁 Step 2: Loop through users and send notification
+        $res = [];
         foreach ($users as $user) {
             // Save to DB
             \DB::table('notifications')->insert([
@@ -113,12 +114,12 @@ class AdminCompanyController extends Controller
                 'updated_at' => now(),
             ]);
 
-            if ($user->face_token) {
+            if ($user->fcm_token) {
                 try {
 
                     $info = array(
                         "message" => array(
-                            "token" => $user->face_token,
+                            "token" => $user->fcm_token,
                             "notification" => array(
                                 "title" => $request->title,
                                 "body" => $request->message,
@@ -140,8 +141,9 @@ class AdminCompanyController extends Controller
                     
                     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
                     $result = curl_exec($ch);
+                    $res[] = $result;
 
-                    \Log::info('FCM Raw Response', ['user_id' => $user->id, 'res' => $result->body()]);
+                    \Log::info('FCM Raw Response', ['user_id' => $user->id, 'res' => $result]);
                 } catch (\Exception $e) {
                     \Log::error("FCM send failed for user {$user->id}: " . $e->getMessage());
                 }
@@ -151,6 +153,8 @@ class AdminCompanyController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Notifications sent using access token.',
+            'accessToken' => $accessToken,
+            'res' => $res,
         ]);
     }
 }
