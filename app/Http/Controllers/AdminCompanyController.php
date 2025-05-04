@@ -9,8 +9,8 @@ use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
 use Illuminate\Support\Facades\Storage;
 use Google\Auth\Credentials\ServiceAccountCredentials;
-use Google\Auth\OAuth2;
 use Illuminate\Support\Facades\Http;
+
 class AdminCompanyController extends Controller
 {
     public function index(Request $request)
@@ -87,29 +87,21 @@ class AdminCompanyController extends Controller
 
         $users = \App\Models\User::whereIn('company', $companyIds)->get();
 
-        // 🔐 Generate Access Token using Service Account
+        // 🔐 Step 1: Generate access token
+        $scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
         $serviceAccountPath = storage_path('app/firebase/firebase-credentials.json');
 
-        $oauth = new OAuth2([
-            'audience' => 'https://oauth2.googleapis.com/token',
-            'issuer' => json_decode(file_get_contents($serviceAccountPath))->client_email,
-            'signingAlgorithm' => 'RS256',
-            'signingKey' => file_get_contents($serviceAccountPath),
-            'tokenCredentialUri' => 'https://oauth2.googleapis.com/token',
-            'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
-        ]);
+        $credentials = new ServiceAccountCredentials($scopes, $serviceAccountPath);
+        $tokenData = $credentials->fetchAuthToken();
 
-        $oauth->setGrantType('urn:ietf:params:oauth:grant-type:jwt-bearer');
-        $token = $oauth->fetchAuthToken();
-
-        if (!isset($token['access_token'])) {
-            return response()->json(['status' => 'error', 'message' => 'Unable to generate access token'], 500);
+        if (!isset($tokenData['access_token'])) {
+            return response()->json(['status' => 'error', 'message' => 'FCM access token failed'], 500);
         }
 
-        $accessToken = $token['access_token'];
+        $accessToken = $tokenData['access_token'];
         $projectId = json_decode(file_get_contents($serviceAccountPath), true)['project_id'];
 
-        // 🔁 Send notifications
+        // 🔁 Step 2: Loop through users and send notification
         foreach ($users as $user) {
             // Save to DB
             \DB::table('notifications')->insert([
@@ -123,10 +115,7 @@ class AdminCompanyController extends Controller
 
             if ($user->face_token) {
                 try {
-                    $res = Http::withHeaders([
-                        'Authorization' => 'Bearer ' . $accessToken,
-                        'Content-Type' => 'application/json',
-                    ])->post("https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send", [
+                    $notificationPayload = [
                         'message' => [
                             'token' => $user->face_token,
                             'notification' => [
@@ -134,9 +123,15 @@ class AdminCompanyController extends Controller
                                 'body' => $request->message,
                             ]
                         ]
-                    ]);
+                    ];
 
-                    \Log::info("FCM sent to {$user->id}", ['res' => $res->body()]);
+                    $response = Http::withToken($accessToken)
+                        ->withHeaders([
+                            'Content-Type' => 'application/json',
+                        ])
+                        ->post("https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send", $notificationPayload);
+
+                    \Log::info('FCM Raw Response', ['user_id' => $user->id, 'res' => $response->body()]);
                 } catch (\Exception $e) {
                     \Log::error("FCM send failed for user {$user->id}: " . $e->getMessage());
                 }
@@ -145,7 +140,7 @@ class AdminCompanyController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Notification sent successfully.',
+            'message' => 'Notifications sent using access token.',
         ]);
     }
 }
