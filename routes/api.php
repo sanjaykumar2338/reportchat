@@ -24,7 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/chats', [ChatController::class, 'getChatsList']);
     Route::post('/chats/search', [ChatController::class, 'searchChats']); // Search chats
 
-    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'userNotifications']);
+    Route::get('/notifications/{id?}', [\App\Http\Controllers\NotificationController::class, 'userNotifications']);
     Route::delete('/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'deleteNotification']);
     Route::delete('/notifications', [\App\Http\Controllers\NotificationController::class, 'clearAllNotifications']);
 });

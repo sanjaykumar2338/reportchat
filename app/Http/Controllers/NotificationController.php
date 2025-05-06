@@ -7,10 +7,30 @@ use Illuminate\Support\Facades\DB;
 
 class NotificationController extends Controller
 {
-    public function userNotifications()
+    public function userNotifications($id = null)
     {
         $userId = Auth::id();
 
+        if ($id) {
+            $notification = DB::table('notifications')
+                ->where('id', $id)
+                ->where('user_id', $userId)
+                ->first();
+
+            if (!$notification) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Notification not found or access denied.',
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $notification,
+            ]);
+        }
+
+        // Return all notifications if ID not provided
         $notifications = DB::table('notifications')
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
