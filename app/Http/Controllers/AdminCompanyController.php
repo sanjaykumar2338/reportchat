@@ -152,7 +152,7 @@ class AdminCompanyController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Notifications sent using access token.',
+            'message' => 'Notifications have been sent to the selected recipients.',
             'accessToken' => $accessToken,
             'res' => $res,
         ]);
