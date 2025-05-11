@@ -18,4 +18,9 @@ class Room extends Model
         'available_to',
         'capacity',
     ];
+
+    public function room()
+    {
+        return $this->belongsTo(Room::class);
+    }
 }

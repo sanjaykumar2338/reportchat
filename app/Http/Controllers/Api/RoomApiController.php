@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class RoomApiController extends Controller
 {
@@ -114,6 +115,28 @@ class RoomApiController extends Controller
         return response()->json([
             'status' => 'success',
             'booked_slots' => $booked
+        ]);
+    }
+
+    public function profileWithReservations()
+    {
+        $user = Auth::user();
+
+        $reservations = RoomReservation::with('room')->where('user_id', $user->id)
+            ->orderBy('date')
+            ->get()
+            ->map(function ($reservation) {
+                if ($reservation->room && $reservation->room->image_url) {
+                    $reservation->room->image_url = asset('storage/' . $reservation->room->image_url);
+                } else {
+                    $reservation->room->image_url = null;
+                }
+                return $reservation;
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'reservations' => $reservations
         ]);
     }
 }
