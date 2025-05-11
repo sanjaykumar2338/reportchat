@@ -30,7 +30,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/rooms', [\App\Http\Controllers\Api\RoomApiController::class, 'index']);
     Route::post('/reservations', [\App\Http\Controllers\Api\RoomApiController::class, 'store']);
-    //Route::get('/reservations/availability', [\App\Http\Controllers\Api\RoomApiController::class, 'checkAvailability']);
+    Route::get('/reservations/availability', [\App\Http\Controllers\Api\RoomApiController::class, 'checkAvailability']);
 });
 
 

@@ -5,7 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Room;
+use App\Models\RoomReservation;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Carbon\Carbon;
 
 class RoomApiController extends Controller
 {
@@ -42,20 +47,30 @@ class RoomApiController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'room_id' => 'required|exists:rooms,id',
             'date' => 'required|date|after_or_equal:today',
             'start_time' => 'required|date_format:H:i',
             'duration_minutes' => 'required|integer|in:30,60,90,120',
         ]);
 
-        $start = Carbon::parse("{$validated['date']} {$validated['start_time']}");
-        $end = (clone $start)->addMinutes($validated['duration_minutes']);
+        if ($validator->fails()) {
+            throw new HttpResponseException(response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422));
+        }
 
-        // Check conflicts
-        $conflict = RoomReservation::where('room_id', $validated['room_id'])
-            ->where('date', $validated['date'])
-            ->where(function($q) use ($start, $end) {
+        $data = $validator->validated();
+
+        $start = Carbon::parse("{$data['date']} {$data['start_time']}");
+        $end = (clone $start)->addMinutes((int) $data['duration_minutes']);
+
+
+        // Check for conflicts
+        $conflict = RoomReservation::where('room_id', $data['room_id'])
+            ->where('date', $data['date'])
+            ->where(function ($q) use ($start, $end) {
                 $q->whereBetween('start_time', [$start->format('H:i'), $end->format('H:i')])
                 ->orWhereBetween('end_time', [$start->format('H:i'), $end->format('H:i')]);
             })->exists();
@@ -64,13 +79,13 @@ class RoomApiController extends Controller
             return response()->json(['message' => 'Time slot already booked.'], 409);
         }
 
-        $reservation = RoomReservation::create([
-            'room_id' => $validated['room_id'],
+        $reservation = create([
+            'room_id' => $data['room_id'],
             'user_id' => auth()->id(),
-            'date' => $validated['date'],
+            'date' => $data['date'],
             'start_time' => $start->format('H:i'),
             'end_time' => $end->format('H:i'),
-            'duration_minutes' => $validated['duration_minutes']
+            'duration_minutes' => $data['duration_minutes'],
         ]);
 
         return response()->json(['message' => 'Reservation created.', 'data' => $reservation]);
@@ -78,15 +93,27 @@ class RoomApiController extends Controller
 
     public function checkAvailability(Request $request)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'room_id' => 'required|exists:rooms,id',
             'date' => 'required|date'
         ]);
 
-        $booked = RoomReservation::where('room_id', $validated['room_id'])
-            ->where('date', $validated['date'])
+        if ($validator->fails()) {
+            throw new HttpResponseException(response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors(),
+            ], 422));
+        }
+
+        $data = $validator->validated();
+
+        $booked = RoomReservation::where('room_id', $data['room_id'])
+            ->where('date', $data['date'])
             ->get(['start_time', 'end_time']);
 
-        return response()->json(['booked_slots' => $booked]);
+        return response()->json([
+            'status' => 'success',
+            'booked_slots' => $booked
+        ]);
     }
 }
