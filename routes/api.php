@@ -29,8 +29,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/notifications', [\App\Http\Controllers\NotificationController::class, 'clearAllNotifications']);
 
     Route::get('/rooms', [\App\Http\Controllers\Api\RoomApiController::class, 'index']);
-    Route::post('/reservation', [\App\Http\Controllers\Api\RoomApiController::class, 'store']);
-    Route::get('/reservation/availability', [\App\Http\Controllers\Api\RoomApiController::class, 'checkAvailability']);
+    Route::post('/reservations', [\App\Http\Controllers\Api\RoomApiController::class, 'store']);
+    Route::get('/reservations/availability', [\App\Http\Controllers\Api\RoomApiController::class, 'checkAvailability']);
 });
 
 
