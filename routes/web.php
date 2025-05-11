@@ -19,19 +19,28 @@ Route::get('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/dashboard', [AdminUserController::class, 'dashboard'])->name('admin.dashboard');
 
+    // Admin Chat Routes
     Route::get('/admin/chats', [AdminChatController::class, 'index'])->name('admin.chats');
     Route::get('/admin/chat/{chat_id}', [AdminChatController::class, 'viewChat'])->name('admin.view.chat');
     Route::post('/admin/chat/{chat_id}/send', [AdminChatController::class, 'sendMessage'])->name('admin.send.message');
     Route::post('/admin/chats/{chat_id}/update-status', [AdminChatController::class, 'updateStatus'])->name('admin.update.status');
     Route::get('/admin/chats/{chat_id}/messages', [AdminChatController::class, 'fetchMessages'])->name('admin.fetch.messages');
-    Route::post('/admin/chats/{chat_id}/messages', [AdminChatController::class, 'sendMessage'])
-    ->name('admin.send.message');
+    Route::post('/admin/chats/{chat_id}/messages', [AdminChatController::class, 'sendMessage'])->name('admin.send.message');
 
     // Admin Users Management
     Route::resource('/admin/users', \App\Http\Controllers\AdminUserController::class)->names('admin.users');
-    Route::post('/admin/companies/send-notification', [\App\Http\Controllers\AdminCompanyController::class, 'sendNotification'])
-    ->name('admin.companies.sendNotification');
+    Route::post('/admin/companies/send-notification', [\App\Http\Controllers\AdminCompanyController::class, 'sendNotification'])->name('admin.companies.sendNotification');
     Route::resource('admin/companies', \App\Http\Controllers\AdminCompanyController::class)->names('admin.companies');
+
+    // Admin Room Management Routes
+    Route::prefix('admin/rooms')->name('admin.rooms.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\RoomController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\RoomController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\RoomController::class, 'store'])->name('store');
+        Route::get('/{room}/edit', [\App\Http\Controllers\RoomController::class, 'edit'])->name('edit');
+        Route::put('/{room}', [\App\Http\Controllers\RoomController::class, 'update'])->name('update');
+        Route::delete('/{room}', [\App\Http\Controllers\RoomController::class, 'destroy'])->name('destroy');
+    });
 });
 
 Route::get('/bulk-register', function () {
