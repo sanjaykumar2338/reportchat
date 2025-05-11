@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Room;
+use Illuminate\Support\Facades\Storage;
 
 class RoomApiController extends Controller
 {
@@ -13,7 +14,7 @@ class RoomApiController extends Controller
         $query = Room::query();
 
         if ($request->has('name')) {
-            $query->where('name', 'like', '%'.$request->name.'%');
+            $query->where('name', 'like', '%' . $request->name . '%');
         }
 
         if ($request->has('category')) {
@@ -21,14 +22,17 @@ class RoomApiController extends Controller
         }
 
         if ($request->has('floor')) {
-            $query->where('floor', 'like', '%'.$request->floor.'%');
+            $query->where('floor', 'like', '%' . $request->floor . '%');
         }
 
         if ($request->has('capacity')) {
-            $query->where('capacity', '>=', (int)$request->capacity);
+            $query->where('capacity', '>=', (int) $request->capacity);
         }
 
-        $rooms = $query->latest()->paginate(10);
+        $rooms = $query->latest()->get()->map(function ($room) {
+            $room->image_url = $room->image_url ? asset('storage/' . $room->image_url) : null;
+            return $room;
+        });
 
         return response()->json([
             'status' => 'success',
