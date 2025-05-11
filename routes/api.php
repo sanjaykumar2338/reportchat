@@ -27,6 +27,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications/{id?}', [\App\Http\Controllers\NotificationController::class, 'userNotifications']);
     Route::delete('/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'deleteNotification']);
     Route::delete('/notifications', [\App\Http\Controllers\NotificationController::class, 'clearAllNotifications']);
+
+    Route::get('/rooms', [\App\Http\Controllers\Api\RoomApiController::class, 'index']);
 });
 
 
