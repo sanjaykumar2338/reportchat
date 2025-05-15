@@ -41,6 +41,16 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::put('/{room}', [\App\Http\Controllers\RoomController::class, 'update'])->name('update');
         Route::delete('/{room}', [\App\Http\Controllers\RoomController::class, 'destroy'])->name('destroy');
     });
+
+    // Admin Reservation Management Routes
+    Route::prefix('admin/reservations')->name('admin.reservations.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ReservationController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\ReservationController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\ReservationController::class, 'store'])->name('store');
+        Route::get('/{reservation}/edit', [\App\Http\Controllers\ReservationController::class, 'edit'])->name('edit');
+        Route::put('/{reservation}', [\App\Http\Controllers\ReservationController::class, 'update'])->name('update');
+        Route::delete('/{reservation}', [\App\Http\Controllers\ReservationController::class, 'destroy'])->name('destroy');
+    });
 });
 
 Route::get('/bulk-register', function () {

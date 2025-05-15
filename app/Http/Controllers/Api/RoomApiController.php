@@ -80,7 +80,7 @@ class RoomApiController extends Controller
             return response()->json(['message' => 'Time slot already booked.'], 409);
         }
 
-        $reservation = create([
+        $reservation = RoomReservation::create([
             'room_id' => $data['room_id'],
             'user_id' => auth()->id(),
             'date' => $data['date'],

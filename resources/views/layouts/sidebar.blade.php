@@ -63,6 +63,11 @@
        class="{{ request()->is('admin/rooms') || request()->is('admin/rooms/*') ? 'active' : '' }}">
        Rooms
     </a>
+
+     <a href="{{ route('admin.reservations.index') }}" 
+       class="{{ request()->is('admin/reservations') || request()->is('admin/reservations/*') ? 'active' : '' }}">
+       Reservations
+    </a>
     
     <a class="" href="{{ route('admin.logout') }}">Logout</a>
 </div>
