@@ -94,6 +94,13 @@ class RoomApiController extends Controller
 
     public function checkAvailability(Request $request)
     {
+        // Normalize the date input to Y-m-d format
+        if ($request->has('date')) {
+            $request->merge([
+                'date' => date('Y-m-d', strtotime($request->input('date')))
+            ]);
+        }
+
         $validator = Validator::make($request->all(), [
             'room_id' => 'required|exists:rooms,id',
             'date' => 'required|date'
