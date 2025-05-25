@@ -119,7 +119,7 @@ class RoomApiController extends Controller
         ]);
     }
 
-    public function profileWithReservations()
+   public function profileWithReservations()
     {
         $user = Auth::user();
 
@@ -127,10 +127,13 @@ class RoomApiController extends Controller
             ->orderBy('date')
             ->get()
             ->map(function ($reservation) {
-                if ($reservation->room && $reservation->room->image_url) {
-                    $reservation->room->image_url = asset('storage/' . $reservation->room->image_url);
-                } else {
-                    $reservation->room->image_url = null;
+                if ($reservation->room) {
+                    $image = $reservation->room->image_url;
+                    if ($image && !str_starts_with($image, 'http')) {
+                        $reservation->room->image_url = asset('storage/' . ltrim($image, '/'));
+                    } else {
+                        $reservation->room->image_url = $image;
+                    }
                 }
                 return $reservation;
             });
