@@ -32,6 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reservations', [\App\Http\Controllers\Api\RoomApiController::class, 'store']);
     Route::get('/reservations/availability', [\App\Http\Controllers\Api\RoomApiController::class, 'checkAvailability']);
     Route::get('/my/reservations', [\App\Http\Controllers\Api\RoomApiController::class, 'profileWithReservations']);
+    Route::get('/reservations/cancel', [\App\Http\Controllers\Api\RoomApiController::class, 'cancelReservation']);
 });
 
 

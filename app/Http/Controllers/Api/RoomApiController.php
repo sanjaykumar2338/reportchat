@@ -139,4 +139,35 @@ class RoomApiController extends Controller
             'reservations' => $reservations
         ]);
     }
+
+    public function cancelReservation(Request $request)
+    {
+        $reservationId = $request->query('reservation_id');
+
+        if (!$reservationId || !is_numeric($reservationId)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid or missing reservation_id'
+            ], 422);
+        }
+
+        $reservation = RoomReservation::where('id', $reservationId)
+            ->where('user_id', auth()->id()) // optional: restrict to logged-in user's own reservation
+            ->first();
+
+        if (!$reservation) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Reservation not found or not authorized.'
+            ], 404);
+        }
+
+        $reservation->status = 1; // 1 means "cancelled"
+        $reservation->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Reservation cancelled successfully.'
+        ]);
+    }
 }

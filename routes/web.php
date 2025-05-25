@@ -28,6 +28,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/chats/{chat_id}/messages', [AdminChatController::class, 'sendMessage'])->name('admin.send.message');
 
     // Admin Users Management
+    Route::get('/admin/users/{user}/reservations', [AdminUserController::class, 'reservationHistory'])->name('admin.users.reservationHistory');
     Route::resource('/admin/users', \App\Http\Controllers\AdminUserController::class)->names('admin.users');
     Route::post('/admin/companies/send-notification', [\App\Http\Controllers\AdminCompanyController::class, 'sendNotification'])->name('admin.companies.sendNotification');
     Route::resource('admin/companies', \App\Http\Controllers\AdminCompanyController::class)->names('admin.companies');
@@ -51,6 +52,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::put('/{reservation}', [\App\Http\Controllers\ReservationController::class, 'update'])->name('update');
         Route::delete('/{reservation}', [\App\Http\Controllers\ReservationController::class, 'destroy'])->name('destroy');
     });
+
+    Route::get('/admin/reservations/calendar', [\App\Http\Controllers\ReservationController::class, 'calendar'])->name('admin.reservations.calendar');
+    Route::get('/admin/reservations/events', [\App\Http\Controllers\ReservationController::class, 'calendarEvents'])->name('admin.reservations.events');
 });
 
 Route::get('/bulk-register', function () {

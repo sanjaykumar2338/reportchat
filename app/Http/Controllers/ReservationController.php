@@ -68,6 +68,7 @@ class ReservationController extends Controller
             'start_time' => ['required', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
             'end_time' => ['required', 'regex:/^\d{2}:\d{2}(:\d{2})?$/', 'after:start_time'],
             'duration_minutes' => 'required|integer|min:1',
+            'status' => 'required|in:0,1',
         ]);
 
         $reservation->update($validated);
@@ -77,7 +78,48 @@ class ReservationController extends Controller
 
     public function destroy(RoomReservation $reservation)
     {
-        $reservation->delete();
-        return redirect()->route('admin.reservations.index')->with('success', 'Reservation deleted successfully.');
+        $reservation->update([
+            'status' => 1, // 1 = Cancelled, 0 = Active
+        ]);
+
+        return redirect()->route('admin.reservations.index')
+            ->with('success', 'Reservation cancelled successfully.');
+    }
+
+    public function calendar(Request $request)
+    {
+        $users = \App\Models\User::all();
+        $rooms = \App\Models\Room::all();
+        return view('admin.reservations.calendar', [
+            'users' => $users,
+            'rooms' => $rooms,
+            'filters' => $request->only(['user_id', 'room_id']),
+        ]);
+    }
+
+    public function calendarEvents(Request $request)
+    {
+        $query = RoomReservation::with(['room', 'user']);
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('room_id')) {
+            $query->where('room_id', $request->room_id);
+        }
+
+        $reservations = $query->get();
+
+        $events = $reservations->map(function ($res) {
+            return [
+                'title' => $res->room->name . ' - ' . $res->user->name,
+                'start' => $res->date . 'T' . $res->start_time,
+                'end' => $res->date . 'T' . $res->end_time,
+                'url' => route('admin.reservations.edit', $res->id),
+            ];
+        });
+
+        return response()->json($events);
     }
 }

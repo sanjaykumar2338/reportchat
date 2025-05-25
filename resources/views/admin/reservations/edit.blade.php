@@ -71,6 +71,14 @@
         </div>
 
         <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-control" required>
+                <option value="0" {{ old('status', $reservation->status ?? '') == 0 ? 'selected' : '' }}>Booked</option>
+                <option value="1" {{ old('status', $reservation->status ?? '') == 1 ? 'selected' : '' }}>Cancelled</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
             <button type="submit" class="btn btn-primary">{{ isset($reservation) ? 'Update' : 'Create' }}</button>
         </div>
     </form>

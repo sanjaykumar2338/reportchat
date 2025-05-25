@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class RoomReservation extends Model
 {
     protected $fillable = [
-        'room_id', 'user_id', 'date', 'start_time', 'end_time', 'duration_minutes'
+        'room_id', 'user_id', 'date', 'start_time', 'end_time', 'duration_minutes', 'status'
     ];
 
     public function room()

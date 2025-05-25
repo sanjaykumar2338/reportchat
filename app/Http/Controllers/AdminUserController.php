@@ -101,4 +101,10 @@ class AdminUserController extends Controller
 
         return redirect()->route('admin.users.index')->with('success', 'User deleted successfully.');
     }
+
+    public function reservationHistory($userId)
+    {
+        $user = User::with('reservations.room')->findOrFail($userId);
+        return view('admin.users.reservation_history', compact('user'));
+    }
 }

@@ -9,6 +9,13 @@
         <h2>Reservations Management</h2>
     </div>
 
+    <div class="d-flex justify-content-between align-items-center mb-3" style="margin-left: 176px; width: 92%;">
+    <h2>&nbsp;</h2>
+    <div>
+        <a href="{{ route('admin.reservations.calendar') }}" class="btn btn-outline-primary me-2">📅 Calendar View</a>
+    </div>
+</div>
+
     <!-- Search Form -->
     <form method="GET" action="{{ route('admin.reservations.index') }}" style="width: 92%; margin-left: 176px;" class="mb-3">
         <div class="row">
@@ -45,6 +52,7 @@
                 <th>Start Time</th>
                 <th>End Time</th>
                 <th>Duration (min)</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -58,6 +66,13 @@
                     <td>{{ \Carbon\Carbon::parse($reservation->start_time)->format('g:i A') }}</td>
                     <td>{{ \Carbon\Carbon::parse($reservation->end_time)->format('g:i A') }}</td>
                     <td>{{ $reservation->duration_minutes }}</td>
+                    <td>
+                        @if($reservation->status == 1)
+                            <span class="badge bg-danger">Cancelled</span>
+                        @else
+                            <span class="badge bg-success">Booked</span>
+                        @endif
+                    </td>
                     <td>
                         <a href="{{ route('admin.reservations.edit', $reservation->id) }}" class="btn btn-sm btn-warning">Edit</a>
                         <form action="{{ route('admin.reservations.destroy', $reservation->id) }}" method="POST" style="display:inline;">
