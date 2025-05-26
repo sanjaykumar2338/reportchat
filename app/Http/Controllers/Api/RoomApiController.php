@@ -89,7 +89,11 @@ class RoomApiController extends Controller
             'duration_minutes' => $data['duration_minutes'],
         ]);
 
-        return response()->json(['message' => 'Reservation created.', 'data' => $reservation]);
+        $reservation->load('room'); // eager-load the room relationship
+        return response()->json([
+            'message' => 'Reservation created.',
+            'data' => $reservation
+        ]);
     }
 
     public function checkAvailability(Request $request)
