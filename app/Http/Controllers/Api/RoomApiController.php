@@ -89,10 +89,18 @@ class RoomApiController extends Controller
             'duration_minutes' => $data['duration_minutes'],
         ]);
 
-        $reservation->load('room'); // eager-load the room relationship
+        $reservation->load('room');
+
+        if ($reservation->room) {
+            $image = $reservation->room->image_url;
+            $reservation->room->image_url = $image && !str_starts_with($image, 'http')
+                ? asset('storage/' . ltrim($image, '/'))
+                : $image;
+        }
+
         return response()->json([
             'message' => 'Reservation created.',
-            'data' => $reservation
+            'data' => $reservation,
         ]);
     }
 
