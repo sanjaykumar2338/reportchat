@@ -66,7 +66,7 @@
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Duration (minutes)</label>
+            <label class="form-label">Duration</label>
             <input type="number" name="duration_minutes" class="form-control" value="{{ old('duration_minutes', $reservation->duration_minutes ?? '') }}" min="1" required>
         </div>
 

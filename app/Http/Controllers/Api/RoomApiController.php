@@ -52,7 +52,7 @@ class RoomApiController extends Controller
             'room_id' => 'required|exists:rooms,id',
             'date' => 'required|date|after_or_equal:today',
             'start_time' => 'required|date_format:H:i',
-            'duration_minutes' => 'required|integer|in:30,60,90,120',
+            'end_time' => 'required|date_format:H:i|after:start_time',
         ]);
 
         if ($validator->fails()) {
@@ -65,15 +65,18 @@ class RoomApiController extends Controller
         $data = $validator->validated();
 
         $start = Carbon::parse("{$data['date']} {$data['start_time']}");
-        $end = (clone $start)->addMinutes((int) $data['duration_minutes']);
-
+        $end = Carbon::parse("{$data['date']} {$data['end_time']}");
 
         // Check for conflicts
         $conflict = RoomReservation::where('room_id', $data['room_id'])
             ->where('date', $data['date'])
             ->where(function ($q) use ($start, $end) {
                 $q->whereBetween('start_time', [$start->format('H:i'), $end->format('H:i')])
-                ->orWhereBetween('end_time', [$start->format('H:i'), $end->format('H:i')]);
+                ->orWhereBetween('end_time', [$start->format('H:i'), $end->format('H:i')])
+                ->orWhere(function ($q2) use ($start, $end) {
+                    $q2->where('start_time', '<', $start->format('H:i'))
+                        ->where('end_time', '>', $end->format('H:i'));
+                });
             })->exists();
 
         if ($conflict) {
@@ -86,7 +89,7 @@ class RoomApiController extends Controller
             'date' => $data['date'],
             'start_time' => $start->format('H:i'),
             'end_time' => $end->format('H:i'),
-            'duration_minutes' => $data['duration_minutes'],
+            'duration_minutes' => $start->diffInMinutes($end),
         ]);
 
         $reservation->load('room');
