@@ -42,7 +42,14 @@
     </style>
 </head>
 <body>
-
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="{{ route('admin.dashboard') }}">Admin Panel</a>
+        <div class="ml-auto">
+            <a class="btn btn-danger btn-sm" href="{{ route('admin.logout') }}">Logout</a>
+        </div>
+    </div>
+</nav>
 @include('layouts.sidebar')
 
 
