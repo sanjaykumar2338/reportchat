@@ -39,22 +39,44 @@ class RoomApiController extends Controller
         $date = $request->get('date', now()->toDateString());
 
         $rooms = $query->latest()->get()->map(function ($room) use ($date) {
-            // Load booked time slots for the date
             $reservations = RoomReservation::where('room_id', $room->id)
                 ->where('date', $date)
                 ->get(['start_time', 'end_time']);
 
+            // Normalize booked slots
             $bookedSlots = $reservations->map(function ($res) {
                 return [
-                    'start_time' => Carbon::parse($res->start_time)->format('H:i'),
-                    'end_time' => Carbon::parse($res->end_time)->format('H:i'),
+                    'start' => Carbon::parse($res->start_time)->format('H:i'),
+                    'end' => Carbon::parse($res->end_time)->format('H:i'),
                 ];
             });
 
+            // Generate all 30-minute slots between available_from and available_to
+            $start = Carbon::parse($room->available_from);
+            $end = Carbon::parse($room->available_to);
+            $allSlots = [];
+
+            while ($start->lt($end)) {
+                $slotStart = $start->format('H:i');
+                $slotEnd = $start->copy()->addMinutes(30)->format('H:i');
+
+                // Check if this slot overlaps with any booked slot
+                $isBooked = $bookedSlots->contains(function ($b) use ($slotStart, $slotEnd) {
+                    return ($slotStart < $b['end']) && ($slotEnd > $b['start']);
+                });
+
+                $allSlots[] = [
+                    'start_time' => $slotStart,
+                    'end_time' => $slotEnd,
+                    'is_booked' => $isBooked
+                ];
+
+                $start->addMinutes(30);
+            }
+
             $room->image_url = $room->image_url ? asset('storage/' . ltrim($room->image_url, '/')) : null;
-            $room->booked = $bookedSlots;
-            $room->available_from = $room->available_from ?? '00:00:00';
-            $room->available_to = $room->available_to ?? '23:59:00';
+            $room->slots = $allSlots;
+
             return $room;
         });
 
