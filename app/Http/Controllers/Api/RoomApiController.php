@@ -20,68 +20,71 @@ class RoomApiController extends Controller
     {
         $query = Room::query();
 
+        // Optional filters
         if ($request->has('name')) {
             $query->where('name', 'like', '%' . $request->name . '%');
         }
-
         if ($request->has('category')) {
             $query->where('category', $request->category);
         }
-
         if ($request->has('floor')) {
             $query->where('floor', 'like', '%' . $request->floor . '%');
         }
-
         if ($request->has('capacity')) {
             $query->where('capacity', '>=', (int) $request->capacity);
         }
 
         $date = $request->get('date', now()->toDateString());
+        $slotDuration = (int) $request->get('slot_duration', 30); // Default to 30 mins
 
-        $rooms = $query->latest()->get()->map(function ($room) use ($date) {
+        $rooms = $query->latest()->get()->map(function ($room) use ($date, $slotDuration) {
+            // Get reservations for this room on the given date
             $reservations = RoomReservation::where('room_id', $room->id)
                 ->where('date', $date)
                 ->get(['start_time', 'end_time']);
 
-            // Force full 24-hour slot range
-            $start = Carbon::createFromTimeString('00:00:00');
-            $end = Carbon::createFromTimeString('23:59:00');
+            // Use room's available time range
+            $startOfDay = Carbon::createFromTimeString($room->available_from);
+            $endOfDay = Carbon::createFromTimeString($room->available_to);
 
-            $allSlots = [];
+            $slots = [];
+            $currentTime = $startOfDay->copy();
 
-            while ($start->lt($end)) {
-                $slotStart = $start->copy();
-                $slotEnd = $start->copy()->addMinutes(30);
+            while ($currentTime->lt($endOfDay)) {
+                $slotStart = $currentTime->copy();
+                $slotEnd = $currentTime->copy()->addMinutes($slotDuration);
 
-                if ($slotEnd->gt($end)) {
+                if ($slotEnd->gt($endOfDay)) {
                     break;
                 }
 
+                // Check for reservation overlap
                 $isBooked = $reservations->contains(function ($res) use ($slotStart, $slotEnd) {
-                    $resStart = Carbon::createFromFormat('H:i:s', $res->start_time);
-                    $resEnd = Carbon::createFromFormat('H:i:s', $res->end_time);
+                    $resStart = Carbon::parse($res->start_time);
+                    $resEnd = Carbon::parse($res->end_time);
+
                     return $slotStart->lt($resEnd) && $slotEnd->gt($resStart);
                 });
 
-                $allSlots[] = [
+                $slots[] = [
                     'start_time' => $slotStart->format('H:i'),
-                    'end_time' => $slotEnd->format('H:i'),
-                    'is_booked' => $isBooked
+                    'end_time'   => $slotEnd->format('H:i'),
+                    'is_booked'  => $isBooked,
                 ];
 
-                $start->addMinutes(30);
+                $currentTime->addMinutes($slotDuration);
             }
 
             $room->image_url = $room->image_url ? asset('storage/' . ltrim($room->image_url, '/')) : null;
-            $room->slots = $allSlots;
+            $room->slots = $slots;
 
             return $room;
         });
 
         return response()->json([
             'status' => 'success',
-            'date' => $date,
-            'data' => $rooms
+            'date'   => $date,
+            'data'   => $rooms
         ]);
     }
 
