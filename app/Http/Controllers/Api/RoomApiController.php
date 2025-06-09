@@ -10,8 +10,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Carbon\CarbonPeriod;
+use Carbon\Carbon;
 
 class RoomApiController extends Controller
 {
@@ -38,33 +39,22 @@ class RoomApiController extends Controller
         $date = $request->get('date', now()->toDateString());
 
         $rooms = $query->latest()->get()->map(function ($room) use ($date) {
-            $start = Carbon::parse($room->available_from ?? '08:00');
-            $end = Carbon::parse($room->available_to ?? '20:00');
-
+            // Load booked time slots for the date
             $reservations = RoomReservation::where('room_id', $room->id)
                 ->where('date', $date)
-                ->get();
+                ->get(['start_time', 'end_time']);
 
-            $slots = [];
-            $period = CarbonPeriod::create($start, '30 minutes', $end->subMinutes(30));
-
-            foreach ($period as $slotStart) {
-                $slotEnd = $slotStart->copy()->addMinutes(30);
-                $isBooked = $reservations->contains(function ($res) use ($slotStart, $slotEnd) {
-                    $resStart = Carbon::parse($res->start_time);
-                    $resEnd = Carbon::parse($res->end_time);
-                    return $slotStart->between($resStart, $resEnd->subMinute()) || $slotEnd->between($resStart->addMinute(), $resEnd);
-                });
-
-                $slots[] = [
-                    'start_time' => $slotStart->format('H:i'),
-                    'end_time' => $slotEnd->format('H:i'),
-                    'is_booked' => $isBooked,
+            $bookedSlots = $reservations->map(function ($res) {
+                return [
+                    'start_time' => Carbon::parse($res->start_time)->format('H:i'),
+                    'end_time' => Carbon::parse($res->end_time)->format('H:i'),
                 ];
-            }
+            });
 
             $room->image_url = $room->image_url ? asset('storage/' . ltrim($room->image_url, '/')) : null;
-            $room->slots = $slots;
+            $room->booked = $bookedSlots;
+            $room->available_from = $room->available_from ?? '00:00:00';
+            $room->available_to = $room->available_to ?? '23:59:00';
             return $room;
         });
 
@@ -74,7 +64,7 @@ class RoomApiController extends Controller
             'data' => $rooms
         ]);
     }
-    
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
