@@ -43,42 +43,35 @@ class RoomApiController extends Controller
                 ->where('date', $date)
                 ->get(['start_time', 'end_time']);
 
-            // Convert reservations into time blocks
-            $bookedSlots = $reservations->map(function ($res) {
-                return [
-                    'start' => Carbon::parse($res->start_time),
-                    'end'   => Carbon::parse($res->end_time),
-                ];
-            });
+            // Generate all 30-minute slots for full 24 hours
+            $start = Carbon::createFromTimeString('00:00:00');
+            $end = Carbon::createFromTimeString('23:59:00');
 
-            // Generate slots from available_from to available_to
-            $availableFrom = Carbon::parse($room->available_from);
-            $availableTo   = Carbon::parse($room->available_to);
             $allSlots = [];
 
-            // Set default slot interval in minutes
-            $interval = 30;
+            while ($start->lt($end)) {
+                $slotStart = $start->copy();
+                $slotEnd = $start->copy()->addMinutes(30);
 
-            while ($availableFrom->lt($availableTo)) {
-                $slotStart = $availableFrom->copy();
-                $slotEnd = $availableFrom->copy()->addMinutes($interval);
-
-                if ($slotEnd->gt($availableTo)) {
+                // Don't create slot if it crosses into next day
+                if ($slotEnd->gt($end)) {
                     break;
                 }
 
-                // Check for overlaps
-                $isBooked = $bookedSlots->contains(function ($booked) use ($slotStart, $slotEnd) {
-                    return $slotStart->lt($booked['end']) && $slotEnd->gt($booked['start']);
+                // Check if this slot overlaps any reservation
+                $isBooked = $reservations->contains(function ($res) use ($slotStart, $slotEnd) {
+                    $resStart = Carbon::parse($res->start_time);
+                    $resEnd = Carbon::parse($res->end_time);
+                    return $slotStart->lt($resEnd) && $slotEnd->gt($resStart);
                 });
 
                 $allSlots[] = [
                     'start_time' => $slotStart->format('H:i'),
                     'end_time' => $slotEnd->format('H:i'),
-                    'is_booked' => $isBooked,
+                    'is_booked' => $isBooked
                 ];
 
-                $availableFrom->addMinutes($interval);
+                $start->addMinutes(30);
             }
 
             $room->image_url = $room->image_url ? asset('storage/' . ltrim($room->image_url, '/')) : null;
@@ -90,7 +83,7 @@ class RoomApiController extends Controller
         return response()->json([
             'status' => 'success',
             'date' => $date,
-            'data' => $rooms,
+            'data' => $rooms
         ]);
     }
 
