@@ -43,7 +43,7 @@ class RoomApiController extends Controller
                 ->where('date', $date)
                 ->get(['start_time', 'end_time']);
 
-            // Generate all 30-minute slots for full 24 hours
+            // Force full 24-hour slot range
             $start = Carbon::createFromTimeString('00:00:00');
             $end = Carbon::createFromTimeString('23:59:00');
 
@@ -53,15 +53,13 @@ class RoomApiController extends Controller
                 $slotStart = $start->copy();
                 $slotEnd = $start->copy()->addMinutes(30);
 
-                // Don't create slot if it crosses into next day
                 if ($slotEnd->gt($end)) {
                     break;
                 }
 
-                // Check if this slot overlaps any reservation
                 $isBooked = $reservations->contains(function ($res) use ($slotStart, $slotEnd) {
-                    $resStart = Carbon::parse($res->start_time);
-                    $resEnd = Carbon::parse($res->end_time);
+                    $resStart = Carbon::createFromFormat('H:i:s', $res->start_time);
+                    $resEnd = Carbon::createFromFormat('H:i:s', $res->end_time);
                     return $slotStart->lt($resEnd) && $slotEnd->gt($resStart);
                 });
 
