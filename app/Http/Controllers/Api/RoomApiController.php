@@ -57,17 +57,19 @@ class RoomApiController extends Controller
             $allSlots = [];
 
             while ($start->lt($end)) {
-                $slotStart = $start->format('H:i');
-                $slotEnd = $start->copy()->addMinutes(30)->format('H:i');
+                $slotStart = $start->copy();
+                $slotEnd = $start->copy()->addMinutes(30);
 
-                // Check if this slot overlaps with any booked slot
-                $isBooked = $bookedSlots->contains(function ($b) use ($slotStart, $slotEnd) {
-                    return ($slotStart < $b['end']) && ($slotEnd > $b['start']);
+                // Check if this slot overlaps with any reservation
+                $isBooked = $reservations->contains(function ($res) use ($slotStart, $slotEnd) {
+                    $resStart = Carbon::parse($res->start_time);
+                    $resEnd = Carbon::parse($res->end_time);
+                    return $slotStart->lt($resEnd) && $slotEnd->gt($resStart);
                 });
 
                 $allSlots[] = [
-                    'start_time' => $slotStart,
-                    'end_time' => $slotEnd,
+                    'start_time' => $slotStart->format('H:i'),
+                    'end_time' => $slotEnd->format('H:i'),
                     'is_booked' => $isBooked
                 ];
 
