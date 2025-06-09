@@ -35,14 +35,54 @@ class RoomApiController extends Controller
             $query->where('capacity', '>=', (int) $request->capacity);
         }
 
-        $rooms = $query->latest()->get()->map(function ($room) {
+        // Use provided date or default to today
+        $date = $request->has('date') ? Carbon::parse($request->date)->format('Y-m-d') : Carbon::today()->format('Y-m-d');
+
+        // Define time range (8 AM to 8 PM)
+        $startTime = Carbon::createFromTime(8, 0);  // 08:00
+        $endTime = Carbon::createFromTime(20, 0);   // 20:00
+        $slotDuration = 30; // in minutes
+
+        // Generate all possible time slots
+        $allSlots = [];
+        $current = $startTime->copy();
+        while ($current < $endTime) {
+            $slotStart = $current->format('H:i');
+            $slotEnd = $current->copy()->addMinutes($slotDuration)->format('H:i');
+            $allSlots[] = ['start_time' => $slotStart, 'end_time' => $slotEnd];
+            $current->addMinutes($slotDuration);
+        }
+
+        $rooms = $query->latest()->get()->map(function ($room) use ($date, $allSlots) {
+            // Format image
             $room->image_url = $room->image_url ? asset('storage/' . $room->image_url) : null;
+
+            // Fetch booked slots for that room and date
+            $booked = RoomReservation::where('room_id', $room->id)
+                ->where('date', $date)
+                ->get(['start_time', 'end_time']);
+
+            // Compare all slots and mark booked
+            $slotsWithStatus = collect($allSlots)->map(function ($slot) use ($booked) {
+                $isBooked = $booked->contains(function ($b) use ($slot) {
+                    return $b->start_time == $slot['start_time'] && $b->end_time == $slot['end_time'];
+                });
+                return [
+                    'start_time' => $slot['start_time'],
+                    'end_time' => $slot['end_time'],
+                    'is_booked' => $isBooked,
+                ];
+            });
+
+            $room->slots = $slotsWithStatus;
+
             return $room;
         });
 
         return response()->json([
             'status' => 'success',
-            'data' => $rooms
+            'date' => $date,
+            'data' => $rooms,
         ]);
     }
 
