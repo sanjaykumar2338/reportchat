@@ -2,6 +2,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\MarketplaceController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -33,6 +34,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reservations/availability', [\App\Http\Controllers\Api\RoomApiController::class, 'checkAvailability']);
     Route::get('/my/reservations', [\App\Http\Controllers\Api\RoomApiController::class, 'profileWithReservations']);
     Route::get('/reservations/cancel', [\App\Http\Controllers\Api\RoomApiController::class, 'cancelReservation']);
+
+    // Marketplace Categories
+    Route::get('/marketplace/categories', [MarketplaceController::class, 'categories']);
+
+    // Listings
+    Route::get('/marketplace/listings', [MarketplaceController::class, 'index']); // List all active listings in a category
+    Route::post('/marketplace/listings', [MarketplaceController::class, 'store']); // Create new listing
+    Route::get('/marketplace/listings/{id}', [MarketplaceController::class, 'show']); // Show single listing
+    Route::put('/marketplace/listings/{id}', [MarketplaceController::class, 'update']); // Update listing
+    Route::delete('/marketplace/listings/{id}', [MarketplaceController::class, 'destroy']); // Delete listing
+
+    // Toggle listing status (Activate/Deactivate)
+    Route::post('/marketplace/listings/{id}/toggle', [MarketplaceController::class, 'toggleStatus']);
+
+    // Republish listing
+    Route::post('/marketplace/listings/{id}/republish', [MarketplaceController::class, 'republish']);
+
+    // My Listings (Active + Inactive)
+    Route::get('/marketplace/my-listings', [MarketplaceController::class, 'myListings']);
 });
 
 
