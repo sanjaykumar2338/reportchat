@@ -19,12 +19,13 @@ class ChatController extends Controller
     {
         try {
             $validatedData = $request->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'nullable|string',
-                'location' => 'nullable|string|max:255',
+                'title' => 'required|string|max:255',         // e.g., "IT Support Request"
+                'sub_type' => 'required|string|max:255',      // e.g., "Software"
+                'description' => 'nullable|string',           // Detail of the issue
+                'location' => 'nullable|string|max:255',      // e.g., "Building A, 2nd Floor"
                 'phone' => 'nullable|string|max:15',
                 'email' => 'nullable|string|email|max:255',
-                'image' => 'nullable|string', // Base64 image
+                'image' => 'nullable|string',                 // Base64 image
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -33,16 +34,16 @@ class ChatController extends Controller
             ], 422);
         }
 
-        // Handle optional image
+        // Save image if present
         $imagePath = null;
         if (!empty($validatedData['image'])) {
             $imagePath = $this->saveBase64Image($validatedData['image']);
         }
 
-        // Create chat with optional fields
         $chat = Chat::create([
             'user_id' => Auth::id(),
-            'title' => $validatedData['title'],
+            'title' => $validatedData['title'],                 // e.g. IT Support Request
+            'sub_type' => $validatedData['sub_type'],           // e.g. Printer, Software
             'description' => $validatedData['description'] ?? null,
             'location' => $validatedData['location'] ?? null,
             'phone' => $validatedData['phone'] ?? null,
