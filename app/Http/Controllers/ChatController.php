@@ -64,6 +64,7 @@ class ChatController extends Controller
             $validatedData = $request->validate([
                 'chat_id' => 'required|integer|exists:chats,id',
                 'title' => 'nullable|string|max:255',
+                'sub_type' => 'required|string|max:255',  
                 'description' => 'nullable|string',
                 'location' => 'nullable|string|max:255',
                 'phone' => 'nullable|string|max:15',
@@ -95,6 +96,7 @@ class ChatController extends Controller
 
         // Update fields
         $chat->title = $validatedData['title'] ?? $chat->title;
+        $chat->sub_type = $validatedData['sub_type'] ?? $chat->sub_type;
         $chat->description = $validatedData['description'] ?? $chat->description;
         $chat->location = $validatedData['location'] ?? $chat->location;
         $chat->phone = $validatedData['phone'] ?? $chat->phone;
@@ -335,7 +337,7 @@ class ChatController extends Controller
             $query->where('user_id', Auth::id());
         }
 
-        $chats = $query->select('id', 'title', 'location', 'status', 'created_at')
+        $chats = $query->select('id', 'title', 'location', 'sub_type', 'status', 'created_at')
                     ->orderBy('created_at', 'desc')
                     ->get();
 
@@ -344,6 +346,7 @@ class ChatController extends Controller
                 'id' => $chat->id,
                 'title' => $chat->title,
                 'location' => $chat->location,
+                'sub_type' => $chat->sub_type,
                 'status' => $chat->status,
                 'created_at' => $chat->created_at,
                 'unread_count' => ChatMessage::where('chat_id', $chat->id)->where('is_read',0)->count()
