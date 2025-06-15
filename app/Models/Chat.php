@@ -11,6 +11,7 @@ class Chat extends Model
     protected $fillable = [
         'user_id',
         'title',
+        'sub_type',
         'description',
         'location',
         'phone',
