@@ -93,8 +93,10 @@ class RoomApiController extends Controller
         $validator = Validator::make($request->all(), [
             'room_id' => 'required|exists:rooms,id',
             'date' => 'required|date|after_or_equal:today',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
+            'start_time' => 'required_if:all_day,false|date_format:H:i',
+            'end_time' => 'required_if:all_day,false|date_format:H:i|after:start_time',
+            'repeat_option' => 'nullable|in:none,weekly',
+            'all_day' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -106,19 +108,20 @@ class RoomApiController extends Controller
 
         $data = $validator->validated();
 
-        $start = Carbon::parse("{$data['date']} {$data['start_time']}");
-        $end = Carbon::parse("{$data['date']} {$data['end_time']}");
+        $start = Carbon::parse($data['date'] . ' ' . ($request->all_day ? '00:00' : $data['start_time']));
+        $end = Carbon::parse($data['date'] . ' ' . ($request->all_day ? '23:59' : $data['end_time']));
+        $repeatOption = $data['repeat_option'] ?? 'none';
 
-        // Check for conflicts
+        // Conflict check
         $conflict = RoomReservation::where('room_id', $data['room_id'])
             ->where('date', $data['date'])
             ->where(function ($q) use ($start, $end) {
                 $q->whereBetween('start_time', [$start->format('H:i'), $end->format('H:i')])
-                ->orWhereBetween('end_time', [$start->format('H:i'), $end->format('H:i')])
-                ->orWhere(function ($q2) use ($start, $end) {
-                    $q2->where('start_time', '<', $start->format('H:i'))
-                        ->where('end_time', '>', $end->format('H:i'));
-                });
+                    ->orWhereBetween('end_time', [$start->format('H:i'), $end->format('H:i')])
+                    ->orWhere(function ($q2) use ($start, $end) {
+                        $q2->where('start_time', '<', $start->format('H:i'))
+                            ->where('end_time', '>', $end->format('H:i'));
+                    });
             })->exists();
 
         if ($conflict) {
@@ -132,16 +135,9 @@ class RoomApiController extends Controller
             'start_time' => $start->format('H:i'),
             'end_time' => $end->format('H:i'),
             'duration_minutes' => $start->diffInMinutes($end),
+            'repeat_option' => $repeatOption,
+            'all_day' => $request->all_day ? 1 : 0,
         ]);
-
-        $reservation->load('room');
-
-        if ($reservation->room) {
-            $image = $reservation->room->image_url;
-            $reservation->room->image_url = $image && !str_starts_with($image, 'http')
-                ? asset('storage/' . ltrim($image, '/'))
-                : $image;
-        }
 
         return response()->json([
             'message' => 'Reservation created.',
