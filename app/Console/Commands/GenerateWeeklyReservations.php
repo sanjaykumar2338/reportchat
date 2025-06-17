@@ -14,20 +14,25 @@ class GenerateWeeklyReservations extends Command
     public function handle()
     {
         $today = Carbon::today();
-        $nextWeek = $today->copy()->addWeek(); // jump 1 week ahead
+        $nextWeek = $today->copy()->addWeek();
 
-        $recurring = RoomReservation::where('repeat_option', 'weekly')
+        // Get only the most recent reservation per room/user/time
+        $latestRecurringIds = RoomReservation::selectRaw('MAX(id) as id')
+            ->where('repeat_option', 'weekly')
             ->where('status', 0)
-            ->get();
+            ->groupBy('room_id', 'user_id', 'start_time')
+            ->pluck('id');
+
+        $recurring = RoomReservation::whereIn('id', $latestRecurringIds)->get();
 
         foreach ($recurring as $res) {
             $originalDate = Carbon::parse($res->date);
             $dayOfWeek = $originalDate->dayOfWeek;
 
-            // Get the exact same weekday for next week
+            // Calculate the same weekday next week
             $targetDate = $nextWeek->copy()->startOfWeek()->addDays($dayOfWeek);
 
-            // Check if it already exists
+            // Skip if already exists
             $exists = RoomReservation::where('room_id', $res->room_id)
                 ->where('user_id', $res->user_id)
                 ->where('date', $targetDate->toDateString())
@@ -39,6 +44,7 @@ class GenerateWeeklyReservations extends Command
                 continue;
             }
 
+            // Create new weekly reservation
             RoomReservation::create([
                 'room_id' => $res->room_id,
                 'user_id' => $res->user_id,
