@@ -13,6 +13,7 @@ class Room extends Model
         'name',
         'floor',
         'category',
+        'company',
         'image_url',
         'available_from',
         'available_to',
@@ -22,5 +23,10 @@ class Room extends Model
     public function room()
     {
         return $this->belongsTo(Room::class);
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(\App\Models\Company::class, 'company', 'id');
     }
 }

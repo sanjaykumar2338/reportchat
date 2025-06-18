@@ -46,6 +46,19 @@
             </select>
         </div>
 
+        <div class="mb-3">
+            <label for="company">Company</label>
+            <select name="company" id="company" class="form-control">
+                <option value="">Select a company</option>
+                @foreach($companies as $company)
+                    <option value="{{ $company->id }}"
+                        {{ old('company', isset($room) ? $room->company : '') == $company->id ? 'selected' : '' }}>
+                        {{ $company->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
         <div class="mb-3 row">
             <div class="col">
                 <label class="form-label">Available From</label>

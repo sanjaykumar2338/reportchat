@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Room;
+use App\Models\Company;
 use App\Models\RoomReservation;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -33,6 +34,10 @@ class RoomApiController extends Controller
         if ($request->has('capacity')) {
             $query->where('capacity', '>=', (int) $request->capacity);
         }
+        if ($request->has('company')) {
+            $query->where('company', $request->company);
+        }
+
 
         $date = $request->get('date', now()->toDateString());
         $slotDuration = (int) $request->get('slot_duration', 30); // Default to 30 mins
@@ -85,6 +90,13 @@ class RoomApiController extends Controller
             'status' => 'success',
             'date'   => $date,
             'data'   => $rooms
+        ]);
+    }
+
+    public function companylist(){
+        return response()->json([
+            'status' => 'success',
+            'companies' => Company::get()
         ]);
     }
 

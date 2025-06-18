@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Room;
+use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -19,15 +20,19 @@ class RoomController extends Controller
         if ($request->filled('category')) {
             $query->where('category', $request->category);
         }
+
+        if ($request->filled('company')) {
+            $query->where('company', $request->company);
+        }
     
-        $rooms = $query->latest()->paginate(10)->withQueryString(); // Keep filters during pagination
-    
+        $rooms = $query->latest()->paginate(10)->withQueryString();
         return view('admin.rooms.index', compact('rooms'));
     }    
 
     public function create()
     {
-        return view('admin.rooms.add');
+        $companies = Company::get();
+        return view('admin.rooms.add', compact('companies'));
     }
 
     public function store(Request $request)
@@ -36,6 +41,7 @@ class RoomController extends Controller
             'name' => 'required|string|max:255',
             'floor' => 'nullable|string|max:255',
             'category' => 'required|in:Sala,Auditorio,Roof',
+            'company' => 'nullable|string|max:255',
             'image' => 'nullable|image|max:2048',
             'available_from' => 'required|date_format:H:i',
             'available_to' => 'required|date_format:H:i',
@@ -53,7 +59,8 @@ class RoomController extends Controller
 
     public function edit(Room $room)
     {
-        return view('admin.rooms.add', compact('room'));
+        $companies = Company::get();
+        return view('admin.rooms.add', compact('room', 'companies'));
     }
 
     public function update(Request $request, Room $room)
@@ -62,6 +69,7 @@ class RoomController extends Controller
             'name' => 'required|string|max:255',
             'floor' => 'nullable|string|max:255',
             'category' => 'required|in:Sala,Auditorio,Roof',
+            'company' => 'nullable|string|max:255',
             'image' => 'nullable|image|max:2048',
             'available_from' => ['required', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
             'available_to' => ['required', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
