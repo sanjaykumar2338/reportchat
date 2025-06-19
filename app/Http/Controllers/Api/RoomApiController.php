@@ -230,7 +230,7 @@ class RoomApiController extends Controller
     {
         $user = Auth::user();
 
-        $reservations = RoomReservation::with('room')->where('user_id', $user->id)
+        $reservations = RoomReservation::with('room.company')->where('user_id', $user->id)
             ->orderBy('date')
             ->get()
             ->map(function ($reservation) {
