@@ -38,36 +38,43 @@ class RoomApiController extends Controller
             $query->where('company', $request->company);
         }
 
-
         $date = $request->get('date', now()->toDateString());
         $slotDuration = (int) $request->get('slot_duration', 30); // Default to 30 mins
+        $filterStartTime = $request->get('start_time'); // Optional start_time
 
-        $rooms = $query->latest()->get()->map(function ($room) use ($date, $slotDuration) {
-            // Get reservations for this room on the given date
+        $rooms = $query->latest()->get()->map(function ($room) use ($date, $slotDuration, $filterStartTime) {
             $reservations = RoomReservation::where('room_id', $room->id)
                 ->where('date', $date)
                 ->get(['start_time', 'end_time']);
 
-            // Use room's available time range
-            $startOfDay = Carbon::createFromTimeString($room->available_from);
-            $endOfDay = Carbon::createFromTimeString($room->available_to);
+            $availableFrom = Carbon::createFromTimeString($room->available_from);
+            $availableTo   = Carbon::createFromTimeString($room->available_to);
+
+            // Use provided start_time if it's within range
+            $startTime = $availableFrom;
+            if ($filterStartTime) {
+                try {
+                    $parsed = Carbon::createFromFormat('H:i', $filterStartTime);
+                    if ($parsed->betweenIncluded($availableFrom, $availableTo)) {
+                        $startTime = $parsed;
+                    }
+                } catch (\Exception $e) {
+                    // Invalid format - fallback to default start
+                }
+            }
 
             $slots = [];
-            $currentTime = $startOfDay->copy();
+            $currentTime = $startTime->copy();
 
-            while ($currentTime->lt($endOfDay)) {
+            while ($currentTime->lt($availableTo)) {
                 $slotStart = $currentTime->copy();
-                $slotEnd = $currentTime->copy()->addMinutes($slotDuration);
+                $slotEnd = $slotStart->copy()->addMinutes($slotDuration);
 
-                if ($slotEnd->gt($endOfDay)) {
-                    break;
-                }
+                if ($slotEnd->gt($availableTo)) break;
 
-                // Check for reservation overlap
                 $isBooked = $reservations->contains(function ($res) use ($slotStart, $slotEnd) {
                     $resStart = Carbon::parse($res->start_time);
                     $resEnd = Carbon::parse($res->end_time);
-
                     return $slotStart->lt($resEnd) && $slotEnd->gt($resStart);
                 });
 
@@ -92,6 +99,7 @@ class RoomApiController extends Controller
             'data'   => $rooms
         ]);
     }
+
 
     public function companylist(){
         return response()->json([
