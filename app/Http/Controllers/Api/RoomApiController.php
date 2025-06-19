@@ -193,9 +193,9 @@ class RoomApiController extends Controller
     public function checkAvailability(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'room_id' => 'required|exists:rooms,id',
-            'date' => 'required|date',
-            'start_time' => 'required|date_format:H:i', // <-- new required field
+            'room_id' => 'nullable|exists:rooms,id',
+            'date' => 'nullable|date',
+            'start_time' => 'nullable|date_format:H:i', // <-- new required field
         ]);
 
         if ($validator->fails()) {
