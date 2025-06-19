@@ -29,4 +29,9 @@ class Room extends Model
     {
         return $this->belongsTo(\App\Models\Company::class, 'company', 'id');
     }
+
+    public function getImageUrlAttribute($value)
+    {
+        return $value ? asset('storage/' . ltrim($value, '/')) : null;
+    }
 }
