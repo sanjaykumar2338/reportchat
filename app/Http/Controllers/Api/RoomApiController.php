@@ -192,10 +192,10 @@ class RoomApiController extends Controller
 
     public function checkAvailability(Request $request)
     {
-        // Normalize the date input to Y-m-d format
         $validator = Validator::make($request->all(), [
             'room_id' => 'required|exists:rooms,id',
-            'date' => 'required|date'
+            'date' => 'required|date',
+            'start_time' => 'required|date_format:H:i', // <-- new required field
         ]);
 
         if ($validator->fails()) {
@@ -207,13 +207,40 @@ class RoomApiController extends Controller
 
         $data = $validator->validated();
 
-        $booked = RoomReservation::where('room_id', $data['room_id'])
-            ->where('date', $data['date'])
+        $roomId = $data['room_id'];
+        $date = $data['date'];
+        $startTime = Carbon::parse($data['start_time']);
+        $endTime = Carbon::createFromTimeString('18:00'); // or make this dynamic per room
+        $interval = 30;
+
+        $slots = [];
+        $booked = RoomReservation::where('room_id', $roomId)
+            ->where('date', $date)
             ->get(['start_time', 'end_time']);
+
+        while ($startTime->lt($endTime)) {
+            $slotStart = $startTime->copy();
+            $slotEnd = $startTime->copy()->addMinutes($interval);
+
+            // Check if this slot is booked
+            $isBooked = $booked->contains(function ($res) use ($slotStart, $slotEnd) {
+                return Carbon::parse($res->start_time)->lt($slotEnd) &&
+                    Carbon::parse($res->end_time)->gt($slotStart);
+            });
+
+            $slots[] = [
+                'start_time' => $slotStart->format('h:i A'),
+                'end_time'   => $slotEnd->format('h:i A'),
+                'is_booked'  => $isBooked,
+            ];
+
+            $startTime->addMinutes($interval);
+        }
 
         return response()->json([
             'status' => 'success',
-            'booked_slots' => $booked
+            'date' => $date,
+            'slots' => $slots
         ]);
     }
 
