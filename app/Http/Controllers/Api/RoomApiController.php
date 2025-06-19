@@ -119,34 +119,64 @@ class RoomApiController extends Controller
         }
 
         $data = $validator->validated();
-
+        $date = Carbon::parse($data['date']);
         $start = Carbon::parse($data['date'] . ' ' . ($request->all_day ? '00:00' : $data['start_time']));
         $end = Carbon::parse($data['date'] . ' ' . ($request->all_day ? '23:59' : $data['end_time']));
+        $startTime = $start->format('H:i');
+        $endTime = $end->format('H:i');
         $repeatOption = $data['repeat_option'] ?? 'none';
+        $weekday = $date->dayOfWeek;
 
-        // Conflict check (for this specific date)
+        // ✅ 1. Standard conflict check on this date
         $conflict = RoomReservation::where('room_id', $data['room_id'])
             ->where('date', $data['date'])
-            ->where(function ($q) use ($start, $end) {
-                $q->whereBetween('start_time', [$start->format('H:i'), $end->format('H:i')])
-                    ->orWhereBetween('end_time', [$start->format('H:i'), $end->format('H:i')])
-                    ->orWhere(function ($q2) use ($start, $end) {
-                        $q2->where('start_time', '<', $start->format('H:i'))
-                            ->where('end_time', '>', $end->format('H:i'));
-                    });
-            })->exists();
+            ->where('status', 0)
+            ->where(function ($q) use ($startTime, $endTime) {
+                $q->whereBetween('start_time', [$startTime, $endTime])
+                ->orWhereBetween('end_time', [$startTime, $endTime])
+                ->orWhere(function ($q2) use ($startTime, $endTime) {
+                    $q2->where('start_time', '<', $startTime)
+                        ->where('end_time', '>', $endTime);
+                });
+            })
+            ->exists();
 
         if ($conflict) {
-            return response()->json(['message' => 'Time slot already booked.'], 409);
+            return response()->json(['message' => 'Time slot already booked for this date.'], 409);
         }
 
-        // Save one reservation row
+        // ✅ 2. Check if a future recurring reservation blocks this pattern
+        $recurringConflict = RoomReservation::where('room_id', $data['room_id'])
+            ->where('repeat_option', 'weekly')
+            ->where('status', 0)
+            ->where('date', '<', $data['date']) // Existing weekly reservation created earlier
+            ->whereTime('start_time', $startTime)
+            ->get()
+            ->filter(function ($res) use ($weekday) {
+                return Carbon::parse($res->date)->dayOfWeek === $weekday;
+            })
+            ->count();
+
+        if ($recurringConflict > 0) {
+            return response()->json([
+                'message' => 'This weekly recurring slot is already booked for future weeks. Only this week is allowed.',
+            ], 409);
+        }
+
+        // ✅ 3. Allow booking only for current week
+        if (!$date->isCurrentWeek() && $recurringConflict > 0) {
+            return response()->json([
+                'message' => 'You can only book this recurring slot for the current week.',
+            ], 409);
+        }
+
+        // ✅ 4. Passed — Save the reservation
         $reservation = RoomReservation::create([
             'room_id' => $data['room_id'],
             'user_id' => auth()->id(),
             'date' => $data['date'],
-            'start_time' => $start->format('H:i'),
-            'end_time' => $end->format('H:i'),
+            'start_time' => $startTime,
+            'end_time' => $endTime,
             'duration_minutes' => $start->diffInMinutes($end),
             'repeat_option' => $repeatOption,
             'all_day' => $request->all_day ? 1 : 0,
@@ -237,8 +267,8 @@ class RoomApiController extends Controller
             ], 404);
         }
 
-        // Cancel only the current reservation
-        if ($request->type === 'this') {
+        // If it's not a recurring reservation, cancel it directly
+        if ($reservation->repeat_option === 'none' || $request->type === 'this') {
             $reservation->update(['status' => 1]);
 
             return response()->json([
@@ -247,7 +277,7 @@ class RoomApiController extends Controller
             ]);
         }
 
-        // Cancel this and all following reservations in the series
+        // Otherwise, cancel this and all future reservations in the recurring series
         $baseId = $reservation->parent_id ?? $reservation->id;
 
         RoomReservation::where(function ($query) use ($baseId) {
@@ -255,7 +285,7 @@ class RoomApiController extends Controller
                     ->orWhere('id', $baseId);
             })
             ->where('date', '>=', $reservation->date)
-            ->where('status', 0) // Only cancel active reservations
+            ->where('status', 0)
             ->update(['status' => 1]);
 
         return response()->json([

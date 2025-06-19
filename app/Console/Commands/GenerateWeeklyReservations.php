@@ -4,21 +4,35 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\RoomReservation;
+use Carbon\Carbon;
 
 class GenerateWeeklyReservations extends Command
 {
     protected $signature = 'reservations:generate-weekly';
-    protected $description = 'No-op: Reservations are handled dynamically based on repeat_option';
+    protected $description = 'Reset cancelled weekly reservations for the same weekday of current week';
 
     public function handle()
     {
-        $count = RoomReservation::where('repeat_option', 'weekly')
-            ->where('status', 0)
-            ->count();
+        $today = Carbon::today();
+        $thisWeekday = $today->dayOfWeek; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 
-        $this->info("Currently active weekly recurring reservations: {$count}");
-        $this->info("No new reservations created, handled dynamically in availability logic.");
+        $reservations = RoomReservation::where('repeat_option', 'weekly')
+            ->where('status', 1) // previously cancelled
+            ->get();
 
+        $count = 0;
+
+        foreach ($reservations as $res) {
+            $originalWeekday = Carbon::parse($res->date)->dayOfWeek;
+
+            if ($originalWeekday === $thisWeekday) {
+                $res->update(['status' => 0]);
+                $this->line("Reactivated reservation ID #{$res->id} for weekday {$thisWeekday}.");
+                $count++;
+            }
+        }
+
+        $this->info("Reactivated {$count} reservations for today (weekday {$thisWeekday}).");
         return 0;
     }
 }
