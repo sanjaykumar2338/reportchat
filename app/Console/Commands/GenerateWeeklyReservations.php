@@ -4,61 +4,20 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\RoomReservation;
-use Carbon\Carbon;
 
 class GenerateWeeklyReservations extends Command
 {
     protected $signature = 'reservations:generate-weekly';
-    protected $description = 'Auto-generate weekly recurring reservations';
+    protected $description = 'No-op: Reservations are handled dynamically based on repeat_option';
 
     public function handle()
     {
-        $today = Carbon::today();
-        $nextWeek = $today->copy()->addWeek();
-
-        // Get only the most recent reservation per room/user/time
-        $latestRecurringIds = RoomReservation::selectRaw('MAX(id) as id')
-            ->where('repeat_option', 'weekly')
+        $count = RoomReservation::where('repeat_option', 'weekly')
             ->where('status', 0)
-            ->groupBy('room_id', 'user_id', 'start_time')
-            ->pluck('id');
+            ->count();
 
-        $recurring = RoomReservation::whereIn('id', $latestRecurringIds)->get();
-
-        foreach ($recurring as $res) {
-            $originalDate = Carbon::parse($res->date);
-            $dayOfWeek = $originalDate->dayOfWeek;
-
-            // Calculate the same weekday next week
-            $targetDate = $nextWeek->copy()->startOfWeek()->addDays($dayOfWeek);
-
-            // Skip if already exists
-            $exists = RoomReservation::where('room_id', $res->room_id)
-                ->where('user_id', $res->user_id)
-                ->where('date', $targetDate->toDateString())
-                ->where('start_time', $res->start_time)
-                ->exists();
-
-            if ($exists) {
-                $this->line("Skipped existing reservation for {$targetDate->toDateString()}");
-                continue;
-            }
-
-            // Create new weekly reservation
-            RoomReservation::create([
-                'room_id' => $res->room_id,
-                'user_id' => $res->user_id,
-                'date' => $targetDate->toDateString(),
-                'start_time' => $res->start_time,
-                'end_time' => $res->end_time,
-                'duration_minutes' => $res->duration_minutes,
-                'repeat_option' => 'weekly',
-                'all_day' => $res->all_day,
-                'status' => 0,
-            ]);
-
-            $this->info("Created recurring reservation for Room {$res->room_id} on {$targetDate->toDateString()}");
-        }
+        $this->info("Currently active weekly recurring reservations: {$count}");
+        $this->info("No new reservations created, handled dynamically in availability logic.");
 
         return 0;
     }

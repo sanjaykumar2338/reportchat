@@ -124,7 +124,7 @@ class RoomApiController extends Controller
         $end = Carbon::parse($data['date'] . ' ' . ($request->all_day ? '23:59' : $data['end_time']));
         $repeatOption = $data['repeat_option'] ?? 'none';
 
-        // Conflict check
+        // Conflict check (for this specific date)
         $conflict = RoomReservation::where('room_id', $data['room_id'])
             ->where('date', $data['date'])
             ->where(function ($q) use ($start, $end) {
@@ -140,6 +140,7 @@ class RoomApiController extends Controller
             return response()->json(['message' => 'Time slot already booked.'], 409);
         }
 
+        // Save one reservation row
         $reservation = RoomReservation::create([
             'room_id' => $data['room_id'],
             'user_id' => auth()->id(),
@@ -149,6 +150,8 @@ class RoomApiController extends Controller
             'duration_minutes' => $start->diffInMinutes($end),
             'repeat_option' => $repeatOption,
             'all_day' => $request->all_day ? 1 : 0,
+            'status' => 0,
+            'parent_id' => null,
         ]);
 
         return response()->json([
@@ -211,32 +214,53 @@ class RoomApiController extends Controller
 
     public function cancelReservation(Request $request)
     {
-        $reservationId = $request->query('reservation_id');
+        $validator = Validator::make($request->all(), [
+            'reservation_id' => 'required|exists:room_reservations,id',
+            'type' => 'required|in:this,this_and_following',
+        ]);
 
-        if (!$reservationId || !is_numeric($reservationId)) {
+        if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Invalid or missing reservation_id'
+                'errors' => $validator->errors(),
             ], 422);
         }
 
-        $reservation = RoomReservation::where('id', $reservationId)
-            ->where('user_id', auth()->id()) // optional: restrict to logged-in user's own reservation
+        $reservation = RoomReservation::where('id', $request->reservation_id)
+            ->where('user_id', auth()->id())
             ->first();
 
         if (!$reservation) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Reservation not found or not authorized.'
+                'message' => 'Reservation not found or unauthorized.',
             ], 404);
         }
 
-        $reservation->status = 1; // 1 means "cancelled"
-        $reservation->save();
+        // Cancel only the current reservation
+        if ($request->type === 'this') {
+            $reservation->update(['status' => 1]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Only this reservation was cancelled.',
+            ]);
+        }
+
+        // Cancel this and all following reservations in the series
+        $baseId = $reservation->parent_id ?? $reservation->id;
+
+        RoomReservation::where(function ($query) use ($baseId) {
+                $query->where('parent_id', $baseId)
+                    ->orWhere('id', $baseId);
+            })
+            ->where('date', '>=', $reservation->date)
+            ->where('status', 0) // Only cancel active reservations
+            ->update(['status' => 1]);
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Reservation cancelled successfully.'
+            'message' => 'This and all following reservations were cancelled.',
         ]);
     }
 }
