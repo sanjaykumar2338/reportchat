@@ -23,7 +23,8 @@ class MarketplaceController extends Controller
 
     public function index(Request $request)
     {
-        $query = MarketplaceListing::where('is_active', true);
+        $query = MarketplaceListing::with('user') // Eager load the user relationship
+            ->where('is_active', true);
 
         if ($request->has('category_id')) {
             $query->where('category_id', $request->category_id);
@@ -37,6 +38,7 @@ class MarketplaceController extends Controller
         }
 
         $listings = $query->latest()->get();
+
         $listings->transform(function ($listing) {
             $listing->images = $this->fullImageUrls($listing->images);
             return $listing;
