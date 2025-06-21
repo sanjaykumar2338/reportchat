@@ -144,9 +144,24 @@ class MarketplaceController extends Controller
         ]);
     }
 
-    public function myListings()
+    public function myListings(Request $request)
     {
-        $listings = MarketplaceListing::where('user_id', Auth::id())->latest()->get();
+        $query = MarketplaceListing::where('user_id', Auth::id());
+
+        // Only filter if category_id is present AND valid
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        // Only filter if search is non-empty
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('title', 'like', '%' . $request->search . '%')
+                ->orWhere('description', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $listings = $query->latest()->get();
 
         $listings->transform(function ($listing) {
             $listing->images = $this->fullImageUrls($listing->images);
@@ -159,7 +174,7 @@ class MarketplaceController extends Controller
         ]);
     }
 
-   private function validateListing(Request $request)
+    private function validateListing(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
