@@ -15,7 +15,7 @@ class AuthController extends Controller
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255',
                 'username' => 'required|string|max:255|unique:users', // Validate username
-                'email' => 'nullable|string|email|max:255|unique:users', // Email is optional
+                'email' => 'required|string|email|max:255|unique:users', // Email is optional
                 'phone' => 'nullable|string|max:15', // Phone is optional
                 'password' => 'required|string|min:6|confirmed',
                 'fcm_token' => 'nullable'

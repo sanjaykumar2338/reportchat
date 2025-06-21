@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class MarketplaceController extends Controller
 {
@@ -182,39 +183,53 @@ class MarketplaceController extends Controller
         return $validator->validated();
     }
 
-    private function handleBase64Images(array $images)
+    protected function handleBase64Images(array $images): array
     {
-        $paths = [];
+        $storedImages = [];
 
-        foreach ($images as $base64Image) {
-            if (!preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
-                continue; // Skip invalid image string
-            }
-
-            $imageData = base64_decode(substr($base64Image, strpos($base64Image, ',') + 1));
-
-            if ($imageData === false) {
-                continue; // Skip if decoding failed
-            }
-
-            $extension = strtolower($type[1]); // jpg, png, etc.
-            $filename = time() . '_' . uniqid() . '.' . $extension;
-            $path = 'marketplace_images/' . $filename;
-
-            Storage::disk('public')->put($path, $imageData);
-            $paths[] = $path;
+        // Ensure the uploads directory exists
+        $uploadPath = public_path('uploads');
+        if (!file_exists($uploadPath)) {
+            mkdir($uploadPath, 0755, true);
         }
 
-        return json_encode($paths);
+        foreach ($images as $index => $base64Image) {
+            if (empty($base64Image)) continue;
+
+            // Add default prefix if missing
+            if (!Str::startsWith($base64Image, 'data:image')) {
+                $base64Image = 'data:image/jpeg;base64,' . $base64Image;
+            }
+
+            if (!Str::contains($base64Image, ',')) continue;
+
+            [$type, $data] = explode(',', $base64Image);
+            $imageExt = explode('/', explode(';', $type)[0])[1] ?? 'jpg';
+            $imageData = base64_decode($data);
+
+            if (!$imageData) continue;
+
+            $imageName = 'image_' . time() . "_$index.$imageExt";
+            $imagePath = $uploadPath . '/' . $imageName;
+
+            file_put_contents($imagePath, $imageData);
+
+            // Set proper permissions to avoid 403
+            chmod($imagePath, 0644);
+
+            $storedImages[] = $imageName;
+        }
+
+        return $storedImages;
     }
 
     private function fullImageUrls($images)
     {
-        $decoded = json_decode($images, true);
+        $decoded = is_array($images) ? $images : json_decode($images, true);
         if (!$decoded || !is_array($decoded)) return [];
 
         return array_map(function ($path) {
-            return asset('storage/' . ltrim($path, '/'));
+            return asset('uploads/' . ltrim($path, '/'));
         }, $decoded);
     }
 }
