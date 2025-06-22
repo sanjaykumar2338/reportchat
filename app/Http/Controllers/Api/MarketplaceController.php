@@ -144,6 +144,14 @@ class MarketplaceController extends Controller
         ]);
     }
 
+    private function stripBaseUrls(array $urls): array
+    {
+        return array_map(function ($url) {
+            // This removes the domain + /uploads/ and returns just the filename
+            return str_replace(asset('uploads/') . '/', '', $url);
+        }, $urls);
+    }
+
     public function republish($id)
     {
         $listing = MarketplaceListing::where('user_id', Auth::id())->findOrFail($id);
