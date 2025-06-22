@@ -89,7 +89,23 @@ class MarketplaceController extends Controller
         $listing->update($data);
 
         if ($request->has('images')) {
-            $listing->images = $this->handleBase64Images($request->images);
+            $submittedImages = $request->images;
+
+            $existingUrls = array_filter($submittedImages, function ($img) {
+                return Str::startsWith($img, 'http');
+            });
+
+            $newBase64 = array_filter($submittedImages, function ($img) {
+                return !Str::startsWith($img, 'http');
+            });
+
+            $uploadedImages = $this->handleBase64Images(array_values($newBase64));
+
+            $listing->images = array_merge(
+                $this->stripBaseUrls($existingUrls),
+                $uploadedImages
+            );
+
             $listing->save();
         }
 
