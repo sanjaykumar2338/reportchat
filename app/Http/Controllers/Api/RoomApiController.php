@@ -89,6 +89,7 @@ class RoomApiController extends Controller
 
             $room->image_url = $room->image_url ? asset('storage/' . ltrim($room->image_url, '/')) : null;
             $room->slots = $slots;
+            $room->load('company');
 
             return $room;
         });
