@@ -193,7 +193,8 @@ class RoomApiController extends Controller
             'parent_id' => null,
         ]);
 
-        $reservation->load('room');
+        $reservation->load(['room.company']);
+        
         return response()->json([
             'message' => 'Reservation created.',
             'data' => $reservation,
