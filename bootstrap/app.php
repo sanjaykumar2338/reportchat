@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Foundation\Configuration\Broadcasting;
+use Illuminate\Console\Scheduling\Schedule; // ✅ 1. Add this import
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use App\Http\Middleware\AdminMiddleware;
 
@@ -24,5 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })
-    ->withBroadcasting('reverb') // ✅ Fix: Pass 'pusher' directly instead of a closure
+    ->withBroadcasting('reverb')
+    
+    // ✅ 2. Add the withSchedule() method here
+    ->withSchedule(function (Schedule $schedule) {
+        $schedule->command('reservations:generate-weekly')->daily();
+    })
+    
     ->create();
