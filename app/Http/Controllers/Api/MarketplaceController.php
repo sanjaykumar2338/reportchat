@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class MarketplaceController extends Controller
 {
@@ -24,22 +25,37 @@ class MarketplaceController extends Controller
 
     public function index(Request $request)
     {
-        $query = MarketplaceListing::with('user') // Eager load the user relationship
+        Log::info('Marketplace Listing Request:', $request->all());
+
+        $query = MarketplaceListing::with('user')
             ->where('is_active', true);
 
-        if ($request->has('category_id')) {
+        // Apply category filter only if not null
+        if (!is_null($request->category_id)) {
             $query->where('category_id', $request->category_id);
         }
 
-        if ($request->has('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('title', 'like', '%' . $request->search . '%')
-                    ->orWhere('description', 'like', '%' . $request->search . '%');
+        // Apply search filter
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            Log::info('Searching for:', ['term' => $search]);
+
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(title) LIKE ?', ['%' . strtolower($search) . '%'])
+                ->orWhereRaw('LOWER(description) LIKE ?', ['%' . strtolower($search) . '%']);
             });
         }
 
+        // Fetch listings
         $listings = $query->latest()->get();
 
+        // Log result summary
+        Log::info('Marketplace Listing Results:', [
+            'count' => $listings->count(),
+            'titles' => $listings->pluck('title')
+        ]);
+
+        // Transform image URLs
         $listings->transform(function ($listing) {
             $listing->images = $this->fullImageUrls($listing->images);
             return $listing;

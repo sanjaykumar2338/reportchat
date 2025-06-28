@@ -71,6 +71,29 @@
         }
     }
 
+    function formatMessage(text) {
+        if (!text) {
+            return '';
+        }
+
+        // This regex finds URLs ending in common image formats.
+        const urlRegex = /(https?:\/\/\S+\.(?:jpg|jpeg|png|gif|webp|svg))/gi;
+
+        return text.replace(urlRegex, (url) => {
+            // For each URL found, replace it with this HTML structure.
+            return `
+                <a href="${url}" target="_blank" class="chat-image-link" title="Open image in new tab">
+                    <img src="${url}" alt="Image from URL" class="chat-image" style="max-width: 250px; border-radius: 8px; margin-top: 5px; display: block;">
+                </a>
+            `;
+        });
+    }
+
+    /**
+     * Fetches and displays all messages for the current chat.
+     */
+
+     
     function fetchMessages() {
         let chatId = "{{ $chat->id }}";
         let loggedUserId = "{{ auth()->id() }}"; // Get logged-in user ID
@@ -83,8 +106,6 @@
 
                 data.messages.forEach(message => {
                     let messageDiv = document.createElement("div");
-
-                    let isCurrentUser = message.user_id == loggedUserId;
                     let isAdmin = message.is_admin;
 
                     messageDiv.classList.add("chat-message");
@@ -93,25 +114,17 @@
                     let messageBoxDiv = document.createElement("div");
                     messageBoxDiv.classList.add(isAdmin ? "admin-message-box" : "user-message-box");
 
-                    let username = isAdmin ? "Admin" : (message.user.name ? message.user.name : "User");
-                    let timestamp = formatTimestamp(message.created_at); // Format timestamp
+                    let username = isAdmin ? "Admin" : (message.user && message.user.name ? message.user.name : "User");
+                    let timestamp = formatTimestamp(message.created_at);
 
-                    let imageHtml = '';
-                    if (message.image) {
-                        imageHtml = `
-                            <br>
-                            <a href="${message.image}" target="_blank" class="chat-image-link">
-                                <img src="${message.image}" alt="Image" class="chat-image" width="100">
-                            </a>
-                            <br>
-                            <a style="display:none;" href="${message.image}" download class="btn btn-sm btn-primary mt-2">Download</a>
-                        `;
-                    }
+                    // --- NEW LOGIC: Process the message text to find and render images ---
+                    // The formatMessage function handles the logic of finding and replacing image URLs.
+                    const formattedMessageContent = formatMessage(message.message);
 
+                    // Construct the final message box HTML
                     messageBoxDiv.innerHTML = `
                         <p class="username">${username}</p>
-                        ${message.message ? `<p class="message-text">${message.message}</p>` : ''} 
-                        ${imageHtml}
+                            <div class="message-text">${formattedMessageContent}</div>
                         <p class="message-time">${timestamp}</p>
                     `;
 
@@ -122,6 +135,15 @@
                 //chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest message
             })
             .catch(error => console.error("Error fetching messages:", error));
+    }
+
+
+    // Example timestamp formatter (if you don't have one)
+    function formatTimestamp(timestamp) {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        // As it's late in India, using a 24-hour format might be suitable, but we'll stick to AM/PM.
+        return date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
     }
 
     // Auto-refresh every 10 seconds

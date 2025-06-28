@@ -40,10 +40,11 @@ class ChatController extends Controller
             $imagePath = $this->saveBase64Image($validatedData['image']);
         }
 
+        // Create chat record
         $chat = Chat::create([
             'user_id' => Auth::id(),
-            'title' => $validatedData['title'],                 // e.g. IT Support Request
-            'sub_type' => $validatedData['sub_type'],           // e.g. Printer, Software
+            'title' => $validatedData['title'],
+            'sub_type' => $validatedData['sub_type'],
             'description' => $validatedData['description'] ?? null,
             'location' => $validatedData['location'] ?? null,
             'phone' => $validatedData['phone'] ?? null,
@@ -51,6 +52,61 @@ class ChatController extends Controller
             'image' => $imagePath,
             'status' => 'pending',
         ]);
+
+        // Now insert chat messages based on flow
+        $flowMap = [
+            "Servicio de Mantenimiento de TI" => [
+                "questions" => [
+                    "Selecciona una opción",
+                    "Selecciona el tipo de problema.",
+                    "Específica el lugar (Empresa, Piso, referencias, etc..)",
+                    "Describe a detalle lo que quieres reportar",
+                    "Envíanos una o más imágenes"
+                ],
+                "answers" => [
+                    $validatedData['title'],
+                    $validatedData['sub_type'],
+                    $validatedData['location'],
+                    $validatedData['description'],
+                    $imagePath,
+                ]
+            ],
+            // Add other flows here if needed
+        ];
+
+        $title = $validatedData['title'];
+        $flow = $flowMap[$title] ?? null;
+
+        if ($flow) {
+            foreach ($flow['questions'] as $i => $question) {
+                // Admin prompt
+                ChatMessage::create([
+                    'chat_id' => $chat->id,
+                    'user_id' => $chat->user_id,
+                    'message' => $question,
+                    'is_admin' => true,
+                ]);
+
+                $answer = $flow['answers'][$i];
+
+                // User response
+                ChatMessage::create([
+                    'chat_id' => $chat->id,
+                    'user_id' => $chat->user_id,
+                    'message' => is_string($answer) && !str_starts_with($answer, 'data:image') ? $answer : null,
+                    'image' => str_starts_with($answer, 'storage/') ? $answer : null,
+                    'is_admin' => false,
+                ]);
+            }
+
+            // Final system message
+            ChatMessage::create([
+                'chat_id' => $chat->id,
+                'user_id' => $chat->user_id,
+                'message' => 'Gracias por tu reporte. Será revisado en breve. Te contactaremos por este medio.',
+                'is_admin' => true,
+            ]);
+        }
 
         return response()->json([
             'message' => 'Chat started successfully',
@@ -275,24 +331,50 @@ class ChatController extends Controller
     private function saveBase64Image($base64String)
     {
         try {
+            $imageData = $base64String;
+            $imageType = null;
+
+            // 1. Check if the string has the data URI scheme prefix
             if (preg_match('/^data:image\/(\w+);base64,/', $base64String, $matches)) {
-                $imageType = $matches[1];
-                $base64String = substr($base64String, strpos($base64String, ',') + 1);
-                $base64String = base64_decode($base64String);
-
-                if ($base64String === false) {
-                    return null;
-                }
-
-                $fileName = 'uploads/messages/' . uniqid() . '.' . $imageType;
-                Storage::disk('public')->put($fileName, $base64String);
-
-                return str_replace('//storage', '/storage', asset('storage/' . $fileName));
+                $imageType = strtolower($matches[1]);
+                $imageData = substr($base64String, strpos($base64String, ',') + 1);
             }
+
+            // 2. Decode the base64 data
+            $decodedImage = base64_decode($imageData);
+            if ($decodedImage === false) {
+                Log::error('Base64 Decode Error: Failed to decode the image string.');
+                return null;
+            }
+
+            // 3. If the image type was not in the prefix, detect it from the binary data
+            if ($imageType === null) {
+                $finfo = finfo_open();
+                $mime_type = finfo_buffer($finfo, $decodedImage, FILEINFO_MIME_TYPE);
+                finfo_close($finfo);
+                $imageType = substr($mime_type, strpos($mime_type, '/') + 1);
+            }
+            
+            // 4. Check if we have a valid image type
+            $allowedTypes = ['jpeg', 'jpg', 'png', 'gif'];
+            if (!in_array($imageType, $allowedTypes)) {
+                Log::error('Invalid Image Type: Detected type was ' . $imageType);
+                return null;
+            }
+
+            // 5. Create a unique filename and save the file
+            $fileName = 'uploads/messages/' . uniqid() . '.' . $imageType;
+            Storage::disk('public')->put($fileName, $decodedImage);
+
+            // 6. Return the FULL public URL for the saved image using the asset() helper
+            //    This is the only line that has changed.
+            return asset(Storage::url($fileName));
+
         } catch (\Exception $e) {
-            Log::error('Base64 Image Save Error: ' . $e->getMessage());
+            Log::error('Base64 Image Save Exception: ' . $e->getMessage());
             return null;
         }
+
         return null;
     }
 
