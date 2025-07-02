@@ -142,8 +142,13 @@ class RoomApiController extends Controller
             $date = Carbon::parse($data['date']);
             $allDay = $request->boolean('all_day');
 
-            $startTime = $data['start_time'] ?? ($allDay ? '00:00' : null);
-            $endTime = $data['end_time'] ?? ($allDay ? '23:59' : null);
+            if ($allDay) {
+                $startTime = '00:00';
+                $endTime = '23:59';
+            } else {
+                $startTime = $data['start_time'] ?? null;
+                $endTime = $data['end_time'] ?? null;
+            }
 
             // Validate presence of times
             if (!$startTime || !$endTime) {
