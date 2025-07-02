@@ -93,8 +93,61 @@
      * Fetches and displays all messages for the current chat.
      */
 
-     
+
     function fetchMessages() {
+        let chatId = "{{ $chat->id }}";
+        let loggedUserId = "{{ auth()->id() }}"; // Get logged-in user ID
+
+        fetch(`/admin/chats/${chatId}/messages`)
+            .then(response => response.json())
+            .then(data => {
+                let chatBox = document.getElementById("chat-box");
+                chatBox.innerHTML = ""; // Clear old messages
+
+                data.messages.forEach(message => {
+                    let messageDiv = document.createElement("div");
+
+                    let isCurrentUser = message.user_id == loggedUserId;
+                    let isAdmin = message.is_admin;
+
+                    messageDiv.classList.add("chat-message");
+                    messageDiv.classList.add(isAdmin ? "admin-message" : "user-message");
+
+                    let messageBoxDiv = document.createElement("div");
+                    messageBoxDiv.classList.add(isAdmin ? "admin-message-box" : "user-message-box");
+
+                    let username = isAdmin ? "Admin" : (message.user.name ? message.user.name : "User");
+                    let timestamp = formatTimestamp(message.created_at); // Format timestamp
+
+                    let imageHtml = '';
+                    if (message.image) {
+                        imageHtml = `
+                            <br>
+                            <a href="${message.image}" target="_blank" class="chat-image-link">
+                                <img src="${message.image}" alt="Image" class="chat-image" width="100">
+                            </a>
+                            <br>
+                            <a style="display:none;" href="${message.image}" download class="btn btn-sm btn-primary mt-2">Download</a>
+                        `;
+                    }
+
+                    messageBoxDiv.innerHTML = `
+                        <p class="username">${username}</p>
+                        ${message.message ? `<p class="message-text">${message.message}</p>` : ''} 
+                        ${imageHtml}
+                        <p class="message-time">${timestamp}</p>
+                    `;
+
+                    messageDiv.appendChild(messageBoxDiv);
+                    chatBox.appendChild(messageDiv);
+                });
+
+                //chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest message
+            })
+            .catch(error => console.error("Error fetching messages:", error));
+    }
+     
+    function fetchMessages222() {
         let chatId = "{{ $chat->id }}";
         let loggedUserId = "{{ auth()->id() }}"; // Get logged-in user ID
 
@@ -136,7 +189,6 @@
             })
             .catch(error => console.error("Error fetching messages:", error));
     }
-
 
     // Example timestamp formatter (if you don't have one)
     function formatTimestamp(timestamp) {

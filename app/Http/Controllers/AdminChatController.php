@@ -67,12 +67,96 @@ class AdminChatController extends Controller
 
     public function fetchMessages($chat_id)
     {
-        $chat = Chat::with(['messages.user']) // Include user details
-            ->findOrFail($chat_id);
+        $chat = Chat::with([
+            'messages' => function ($q) {
+                $q->orderBy('created_at')->with('user');
+            },
+            'user'
+        ])->findOrFail($chat_id);
+
+        $initialQuestionMap = [
+            'title' => 'Selecciona una opción',
+            'sub_type' => 'Selecciona el tipo de problema.',
+            'location' => 'Específica el lugar (Empresa, Piso, referencias, etc..)',
+            'description' => 'Describe a detalle lo que quieres reportar',
+        ];
+
+        $virtualMessages = [];
+        $user = $chat->user;
+
+        foreach ($initialQuestionMap as $field => $question) {
+            if (!empty($chat->$field)) {
+                $virtualMessages[] = [
+                    'id' => "virtual_{$field}_question",
+                    'chat_id' => $chat->id,
+                    'message' => $question,
+                    'is_admin' => true,
+                    'created_at' => $chat->created_at,
+                ];
+
+                $virtualMessages[] = [
+                    'id' => "virtual_{$field}_answer",
+                    'chat_id' => $chat->id,
+                    'message' => $chat->$field,
+                    'user_id' => $chat->user_id,
+                    'is_admin' => false,
+                    'created_at' => $chat->created_at,
+                    'user' => $user,
+                ];
+            }
+        }
+
+        $chatMessages = $chat->messages->map(function ($msg) {
+            return [
+                'id' => $msg->id,
+                'chat_id' => $msg->chat_id,
+                'user_id' => $msg->user_id,
+                'admin_id' => $msg->admin_id,
+                'message' => $msg->message,
+                'image' => $msg->image,
+                'is_admin' => (bool)$msg->is_admin,
+                'is_read' => $msg->is_read,
+                'created_at' => $msg->created_at,
+                'updated_at' => $msg->updated_at,
+                'user' => $msg->user,
+            ];
+        });
+
+        // Inject "Envíanos una o más imágenes" and "Gracias por tu reporte" correctly
+        $finalMessages = $virtualMessages;
+        $insertedGracias = false;
+
+        foreach ($chatMessages as $index => $message) {
+            // If first user message is image/text, prepend the prompt
+            if ($index === 0 && !$message['is_admin'] && (!empty($message['message']) || !empty($message['image']))) {
+                $finalMessages[] = [
+                    'id' => "virtual_image_prompt",
+                    'chat_id' => $chat->id,
+                    'message' => 'Envíanos una o más imágenes',
+                    'is_admin' => true,
+                    'created_at' => $message['created_at'],
+                ];
+            }
+
+            $finalMessages[] = $message;
+
+            // After first non-admin message with text or image, insert thank-you
+            if (!$insertedGracias && !$message['is_admin'] && (!empty($message['message']) || !empty($message['image']))) {
+                $finalMessages[] = [
+                    'id' => "virtual_thank_you",
+                    'chat_id' => $chat->id,
+                    'message' => 'Gracias por tu reporte. Será revisado en breve. Te contactaremos por este medio.',
+                    'is_admin' => true,
+                    'created_at' => $message['created_at'],
+                ];
+                $insertedGracias = true;
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'messages' => $chat->messages
+            'chat_id' => $chat->id,
+            'messages' => $finalMessages,
         ]);
     }
 

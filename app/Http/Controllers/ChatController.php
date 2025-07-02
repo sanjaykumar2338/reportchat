@@ -54,6 +54,8 @@ class ChatController extends Controller
         ]);
 
         // Now insert chat messages based on flow
+        
+        /*
         $flowMap = [
             "Servicio de Mantenimiento de TI" => [
                 "questions" => [
@@ -107,7 +109,7 @@ class ChatController extends Controller
                 'is_admin' => true,
             ]);
         }
-
+        */
         return response()->json([
             'message' => 'Chat started successfully',
             'chat' => $chat
