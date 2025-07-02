@@ -14,6 +14,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Auth;
 use Carbon\CarbonPeriod;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class RoomApiController extends Controller
 {
@@ -45,6 +46,7 @@ class RoomApiController extends Controller
         $rooms = $query->latest()->get()->map(function ($room) use ($date, $slotDuration, $filterStartTime) {
             $reservations = RoomReservation::where('room_id', $room->id)
                 ->where('date', $date)
+                ->where('status', 0)
                 ->get(['start_time', 'end_time']);
 
             $availableFrom = Carbon::createFromTimeString($room->available_from);
@@ -101,7 +103,6 @@ class RoomApiController extends Controller
         ]);
     }
 
-
     public function companylist(){
         return response()->json([
             'status' => 'success',
@@ -111,94 +112,125 @@ class RoomApiController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'room_id' => 'required|exists:rooms,id',
-            'date' => 'required|date|after_or_equal:today',
-            'start_time' => 'required_if:all_day,false|date_format:H:i',
-            'end_time' => 'required_if:all_day,false|date_format:H:i|after:start_time',
-            'repeat_option' => 'nullable|in:none,weekly',
-            'all_day' => 'nullable|boolean',
-        ]);
+        try {
+            // Log all incoming input data
+            Log::info('Room reservation request received', [
+                'input' => $request->all(),
+                'user_id' => auth()->id(),
+                'ip' => $request->ip(),
+                'timestamp' => now()->toDateTimeString()
+            ]);
 
-        if ($validator->fails()) {
-            throw new HttpResponseException(response()->json([
+            $validator = Validator::make($request->all(), [
+                'room_id' => 'required|exists:rooms,id',
+                'date' => 'required|date|after_or_equal:today',
+                'start_time' => 'nullable|date_format:H:i',
+                'end_time' => 'nullable|date_format:H:i',
+                //'end_time' => 'nullable|date_format:H:i|after:start_time',
+                'repeat_option' => 'nullable|in:none,weekly',
+                'all_day' => 'nullable|boolean',
+            ]);
+
+            if ($validator->fails()) {
+                throw new HttpResponseException(response()->json([
+                    'status' => 'error',
+                    'errors' => $validator->errors(),
+                ], 422));
+            }
+
+            $data = $validator->validated();
+            $date = Carbon::parse($data['date']);
+            $allDay = $request->boolean('all_day');
+
+            $startTime = $data['start_time'] ?? ($allDay ? '00:00' : null);
+            $endTime = $data['end_time'] ?? ($allDay ? '23:59' : null);
+
+            // Validate presence of times
+            if (!$startTime || !$endTime) {
+                return response()->json(['message' => 'Start and end time are required unless all_day is true.'], 422);
+            }
+
+            $start = Carbon::parse($data['date'] . ' ' . $startTime);
+            $end = Carbon::parse($data['date'] . ' ' . $endTime);
+
+            // If end is '00:00' or earlier than start, assume next day
+            if ($endTime === '00:00' || $end->lt($start)) {
+                $end->addDay();
+            }
+
+            $weekday = $date->dayOfWeek;
+            $repeatOption = $data['repeat_option'] ?? 'none';
+
+            // Conflict check
+            $conflict = RoomReservation::where('room_id', $data['room_id'])
+                ->where('date', $data['date'])
+                ->where('status', 0)
+                ->where(function ($q) use ($startTime, $endTime) {
+                    $q->whereBetween('start_time', [$startTime, $endTime])
+                        ->orWhereBetween('end_time', [$startTime, $endTime])
+                        ->orWhere(function ($q2) use ($startTime, $endTime) {
+                            $q2->where('start_time', '<', $startTime)
+                                ->where('end_time', '>', $endTime);
+                        });
+                })
+                ->exists();
+
+            if ($conflict) {
+                return response()->json(['message' => 'Time slot already booked for this date.'], 409);
+            }
+
+            // Recurring weekly conflict
+            $recurringConflict = RoomReservation::where('room_id', $data['room_id'])
+                ->where('repeat_option', 'weekly')
+                ->where('status', 0)
+                ->where('date', '<', $data['date'])
+                ->whereTime('start_time', $startTime)
+                ->get()
+                ->filter(function ($res) use ($weekday) {
+                    return Carbon::parse($res->date)->dayOfWeek === $weekday;
+                })
+                ->count();
+
+            if ($recurringConflict > 0 && !$date->isCurrentWeek()) {
+                return response()->json([
+                    'message' => 'You can only book this recurring slot for the current week.',
+                ], 409);
+            }
+
+            // Save reservation
+            $reservation = RoomReservation::create([
+                'room_id' => $data['room_id'],
+                'user_id' => auth()->id(),
+                'date' => $data['date'],
+                'start_time' => $start->format('H:i'),
+                'end_time' => $end->format('H:i'),
+                'duration_minutes' => $start->diffInMinutes($end),
+                'repeat_option' => $repeatOption,
+                'all_day' => $allDay ? 1 : 0,
+                'status' => 0,
+                'parent_id' => null,
+            ]);
+
+            $reservation->load(['room.company']);
+
+            return response()->json([
+                'message' => 'Reservation created.',
+                'data' => $reservation,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Room reservation error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => auth()->id(),
+                'input' => $request->all()
+            ]);
+
+            return response()->json([
                 'status' => 'error',
-                'errors' => $validator->errors(),
-            ], 422));
+                'message' => 'Something went wrong. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $data = $validator->validated();
-        $date = Carbon::parse($data['date']);
-        $start = Carbon::parse($data['date'] . ' ' . ($request->all_day ? '00:00' : $data['start_time']));
-        $end = Carbon::parse($data['date'] . ' ' . ($request->all_day ? '23:59' : $data['end_time']));
-        $startTime = $start->format('H:i');
-        $endTime = $end->format('H:i');
-        $repeatOption = $data['repeat_option'] ?? 'none';
-        $weekday = $date->dayOfWeek;
-
-        // ✅ 1. Standard conflict check on this date
-        $conflict = RoomReservation::where('room_id', $data['room_id'])
-            ->where('date', $data['date'])
-            ->where('status', 0)
-            ->where(function ($q) use ($startTime, $endTime) {
-                $q->whereBetween('start_time', [$startTime, $endTime])
-                ->orWhereBetween('end_time', [$startTime, $endTime])
-                ->orWhere(function ($q2) use ($startTime, $endTime) {
-                    $q2->where('start_time', '<', $startTime)
-                        ->where('end_time', '>', $endTime);
-                });
-            })
-            ->exists();
-
-        if ($conflict) {
-            return response()->json(['message' => 'Time slot already booked for this date.'], 409);
-        }
-
-        // ✅ 2. Check if a future recurring reservation blocks this pattern
-        $recurringConflict = RoomReservation::where('room_id', $data['room_id'])
-            ->where('repeat_option', 'weekly')
-            ->where('status', 0)
-            ->where('date', '<', $data['date']) // Existing weekly reservation created earlier
-            ->whereTime('start_time', $startTime)
-            ->get()
-            ->filter(function ($res) use ($weekday) {
-                return Carbon::parse($res->date)->dayOfWeek === $weekday;
-            })
-            ->count();
-
-        if ($recurringConflict > 0) {
-            return response()->json([
-                'message' => 'This weekly recurring slot is already booked for future weeks. Only this week is allowed.',
-            ], 409);
-        }
-
-        // ✅ 3. Allow booking only for current week
-        if (!$date->isCurrentWeek() && $recurringConflict > 0) {
-            return response()->json([
-                'message' => 'You can only book this recurring slot for the current week.',
-            ], 409);
-        }
-
-        // ✅ 4. Passed — Save the reservation
-        $reservation = RoomReservation::create([
-            'room_id' => $data['room_id'],
-            'user_id' => auth()->id(),
-            'date' => $data['date'],
-            'start_time' => $startTime,
-            'end_time' => $endTime,
-            'duration_minutes' => $start->diffInMinutes($end),
-            'repeat_option' => $repeatOption,
-            'all_day' => $request->all_day ? 1 : 0,
-            'status' => 0,
-            'parent_id' => null,
-        ]);
-
-        $reservation->load(['room.company']);
-        
-        return response()->json([
-            'message' => 'Reservation created.',
-            'data' => $reservation,
-        ]);
     }
 
     public function checkAvailability(Request $request)
@@ -220,6 +252,7 @@ class RoomApiController extends Controller
 
         $booked = RoomReservation::where('room_id', $data['room_id'])
             ->where('date', $data['date'])
+            ->where('status', 0)
             ->get(['start_time', 'end_time']);
 
         return response()->json([
