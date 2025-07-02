@@ -93,7 +93,6 @@
      * Fetches and displays all messages for the current chat.
      */
 
-
     function fetchMessages() {
         let chatId = "{{ $chat->id }}";
         let loggedUserId = "{{ auth()->id() }}"; // Get logged-in user ID
@@ -133,7 +132,7 @@
 
                     messageBoxDiv.innerHTML = `
                         <p class="username">${username}</p>
-                        ${message.message ? `<p class="message-text">${message.message}</p>` : ''} 
+                        ${!message.image && message.message ? `<p class="message-text">${message.message}</p>` : ''}
                         ${imageHtml}
                         <p class="message-time">${timestamp}</p>
                     `;
@@ -147,7 +146,7 @@
             .catch(error => console.error("Error fetching messages:", error));
     }
      
-    function fetchMessages222() {
+    function fetchMessages22() {
         let chatId = "{{ $chat->id }}";
         let loggedUserId = "{{ auth()->id() }}"; // Get logged-in user ID
 
@@ -189,6 +188,7 @@
             })
             .catch(error => console.error("Error fetching messages:", error));
     }
+
 
     // Example timestamp formatter (if you don't have one)
     function formatTimestamp(timestamp) {
