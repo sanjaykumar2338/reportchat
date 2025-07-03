@@ -38,6 +38,9 @@ class RoomApiController extends Controller
         if ($request->has('company')) {
             $query->where('company', $request->company);
         }
+        if ($request->has('room_id')) {
+            $query->where('id', $request->room_id);
+        }
 
         $date = $request->get('date', now()->toDateString());
         $slotDuration = (int) $request->get('slot_duration', 30); // Default to 30 mins
