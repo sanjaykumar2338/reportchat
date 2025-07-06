@@ -95,4 +95,47 @@
     </form>
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const timeInputs = document.querySelectorAll('input[type="time"]');
+        const fromInput = document.querySelector('input[name="available_from"]');
+        const toInput = document.querySelector('input[name="available_to"]');
+
+        function roundTime(input) {
+            if (!input.value) return;
+            let [hour, minute] = input.value.split(':');
+            if (minute !== '00' && minute !== '30') {
+                let rounded = parseInt(minute) < 30 ? '00' : '30';
+                input.value = `${hour.padStart(2, '0')}:${rounded}`;
+            }
+        }
+
+        function validateTimeOrder() {
+            if (fromInput.value && toInput.value) {
+                const [fromHour, fromMin] = fromInput.value.split(':').map(Number);
+                const [toHour, toMin] = toInput.value.split(':').map(Number);
+
+                const fromMinutes = fromHour * 60 + fromMin;
+                const toMinutes = toHour * 60 + toMin;
+
+                if (toMinutes <= fromMinutes) {
+                    alert('End time must be after start time.');
+                    toInput.value = '';
+                }
+            }
+        }
+
+        timeInputs.forEach(input => {
+            input.addEventListener('change', function () {
+                roundTime(this);
+                validateTimeOrder();
+            });
+
+            // Optional: prevent manual typing
+            input.addEventListener('keydown', e => e.preventDefault());
+        });
+    });
+</script>
+
+
 @endsection
