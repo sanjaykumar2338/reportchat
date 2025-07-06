@@ -100,6 +100,7 @@
         const timeInputs = document.querySelectorAll('input[type="time"]');
         const fromInput = document.querySelector('input[name="available_from"]');
         const toInput = document.querySelector('input[name="available_to"]');
+        const form = document.querySelector('form');
 
         function roundTime(input) {
             if (!input.value) return;
@@ -110,7 +111,7 @@
             }
         }
 
-        function validateTimeOrder() {
+        function isValidTimeRange() {
             if (fromInput.value && toInput.value) {
                 const [fromHour, fromMin] = fromInput.value.split(':').map(Number);
                 const [toHour, toMin] = toInput.value.split(':').map(Number);
@@ -118,10 +119,15 @@
                 const fromMinutes = fromHour * 60 + fromMin;
                 const toMinutes = toHour * 60 + toMin;
 
-                if (toMinutes <= fromMinutes) {
-                    alert('End time must be after start time.');
-                    toInput.value = '';
-                }
+                return toMinutes > fromMinutes;
+            }
+            return true;
+        }
+
+        function validateTimeOrder() {
+            if (!isValidTimeRange()) {
+                alert('End time must be after start time.');
+                toInput.value = '';
             }
         }
 
@@ -131,11 +137,16 @@
                 validateTimeOrder();
             });
 
-            // Optional: prevent manual typing
             input.addEventListener('keydown', e => e.preventDefault());
+        });
+
+        form.addEventListener('submit', function (e) {
+            if (!isValidTimeRange()) {
+                alert('Cannot submit: "Available To" time must be after "Available From" time.');
+                e.preventDefault(); // Stop form submission
+            }
         });
     });
 </script>
-
 
 @endsection
