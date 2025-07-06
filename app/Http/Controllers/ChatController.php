@@ -414,11 +414,16 @@ class ChatController extends Controller
         return response()->json(['message' => 'Admin reply sent', 'chat' => $message], 201);
     }
 
-    public function getChatsList()
+    public function getChatsList(Request $request)
     {
         $query = Chat::query();
+
         if (!auth()->user()->is_admin) {
             $query->where('user_id', Auth::id());
+        }
+
+        if ($request->has('category') && $request->category !== null) {
+            $query->where('title', $request->category);
         }
 
         $chats = $query->select('id', 'title', 'location', 'sub_type', 'status', 'created_at')
@@ -433,7 +438,7 @@ class ChatController extends Controller
                 'sub_type' => $chat->sub_type,
                 'status' => $chat->status,
                 'created_at' => $chat->created_at,
-                'unread_count' => ChatMessage::where('chat_id', $chat->id)->where('is_read',0)->count()
+                'unread_count' => ChatMessage::where('chat_id', $chat->id)->where('is_read', 0)->count()
             ];
         });
 
