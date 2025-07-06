@@ -96,7 +96,7 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    //document.addEventListener('DOMContentLoaded', function () {
         const timeInputs = document.querySelectorAll('input[type="time"]');
         const fromInput = document.querySelector('input[name="available_from"]');
         const toInput = document.querySelector('input[name="available_to"]');
@@ -146,7 +146,7 @@
                 e.preventDefault(); // Stop form submission
             }
         });
-    });
+    //});
 </script>
 
 @endsection
