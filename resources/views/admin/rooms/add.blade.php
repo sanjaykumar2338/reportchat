@@ -80,7 +80,7 @@
             <input type="file" name="image" class="form-control">
             @if(isset($room) && $room->image_url)
                 <div class="mt-2">
-                    <img src="{{ asset('storage/' . $room->image_url) }}" alt="Room Image" width="120">
+                    <img src="{{ url($room->image_url) }}" alt="Room Image" width="120">
                     <div class="form-check mt-2">
                         <input type="checkbox" name="remove_image" class="form-check-input" id="remove_image">
                         <label class="form-check-label" for="remove_image">Remove existing image</label>
