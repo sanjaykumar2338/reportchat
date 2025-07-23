@@ -59,8 +59,8 @@
                     </td>
                     <td>
                         @if($room->image_url)
-                            <a href="{{ asset('storage/' . asset('storage/' . $room->image_url)) }}" target="_blank">
-                                <img src="{{ asset('storage/' . asset('storage/' . $room->image_url)) }}" alt="Room Image" width="60">
+                            <a href="{{ url($room->image_url) }}" target="_blank">
+                                <img src="{{ url($room->image_url) }}" alt="Room Image" width="60">
                             </a>
                         @else
                             -
