@@ -129,7 +129,6 @@ class RoomApiController extends Controller
                 'date' => 'required|date|after_or_equal:today',
                 'start_time' => 'nullable|date_format:H:i',
                 'end_time' => 'nullable|date_format:H:i',
-                //'end_time' => 'nullable|date_format:H:i|after:start_time',
                 'repeat_option' => 'nullable|in:none,weekly',
                 'all_day' => 'nullable|boolean',
             ]);
@@ -165,23 +164,30 @@ class RoomApiController extends Controller
             if ($endTime === '00:00' || $end->lt($start)) {
                 $end->addDay();
             }
+            
+            // Use the formatted time for database queries
+            $startTimeFormatted = $start->format('H:i:s');
+            $endTimeFormatted = $end->format('H:i:s');
+
 
             $weekday = $date->dayOfWeek;
             $repeatOption = $data['repeat_option'] ?? 'none';
 
-            // Conflict check
+            // =================================================================
+            // CORRECTED CONFLICT CHECK LOGIC
+            // This logic correctly checks for any true overlaps.
+            // It finds any existing reservation where:
+            // (existing_start_time < new_end_time) AND (existing_end_time > new_start_time)
+            // =================================================================
             $conflict = RoomReservation::where('room_id', $data['room_id'])
                 ->where('date', $data['date'])
-                ->where('status', 0)
-                ->where(function ($q) use ($startTime, $endTime) {
-                    $q->whereBetween('start_time', [$startTime, $endTime])
-                        ->orWhereBetween('end_time', [$startTime, $endTime])
-                        ->orWhere(function ($q2) use ($startTime, $endTime) {
-                            $q2->where('start_time', '<', $startTime)
-                                ->where('end_time', '>', $endTime);
-                        });
+                ->where('status', 0) // Assuming 0 is a booked status
+                ->where(function ($query) use ($startTimeFormatted, $endTimeFormatted) {
+                    $query->where('start_time', '<', $endTimeFormatted)
+                        ->where('end_time', '>', $startTimeFormatted);
                 })
                 ->exists();
+
 
             if ($conflict) {
                 return response()->json(['message' => 'Time slot already booked for this date.'], 409);
@@ -192,12 +198,16 @@ class RoomApiController extends Controller
                 ->where('repeat_option', 'weekly')
                 ->where('status', 0)
                 ->where('date', '<', $data['date'])
-                ->whereTime('start_time', $startTime)
+                ->where(function ($query) use ($startTimeFormatted, $endTimeFormatted) {
+                    $query->where('start_time', '<', $endTimeFormatted)
+                        ->where('end_time', '>', $startTimeFormatted);
+                })
                 ->get()
                 ->filter(function ($res) use ($weekday) {
                     return Carbon::parse($res->date)->dayOfWeek === $weekday;
                 })
                 ->count();
+
 
             if ($recurringConflict > 0 && !$date->isCurrentWeek()) {
                 return response()->json([

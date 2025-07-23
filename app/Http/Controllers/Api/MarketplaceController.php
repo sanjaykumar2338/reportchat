@@ -30,7 +30,12 @@ class MarketplaceController extends Controller
         $query = MarketplaceListing::with('user')
             ->where('is_active', true);
 
-        // Apply category filter only if not null
+        // Filter by recent 14 days in Mexico timezone
+        $mexicoNow = Carbon::now('America/Mexico_City');
+        $cutoffDate = $mexicoNow->subDays(14);
+        $query->where('created_at', '>=', $cutoffDate);
+
+        // Apply category filter
         if (!is_null($request->category_id)) {
             $query->where('category_id', $request->category_id);
         }
@@ -42,7 +47,7 @@ class MarketplaceController extends Controller
 
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(title) LIKE ?', ['%' . strtolower($search) . '%'])
-                ->orWhereRaw('LOWER(description) LIKE ?', ['%' . strtolower($search) . '%']);
+                    ->orWhereRaw('LOWER(description) LIKE ?', ['%' . strtolower($search) . '%']);
             });
         }
 
