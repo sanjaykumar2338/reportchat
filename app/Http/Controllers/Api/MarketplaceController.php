@@ -193,6 +193,11 @@ class MarketplaceController extends Controller
     {
         $query = MarketplaceListing::where('user_id', Auth::id());
 
+        // Filter by recent 14 days in Mexico timezone
+        $mexicoNow = Carbon::now('America/Mexico_City');
+        $cutoffDate = $mexicoNow->subDays(14);
+        $query->where('created_at', '>=', $cutoffDate);
+
         // Only filter if category_id is present AND valid
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
@@ -200,9 +205,10 @@ class MarketplaceController extends Controller
 
         // Only filter if search is non-empty
         if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('title', 'like', '%' . $request->search . '%')
-                ->orWhere('description', 'like', '%' . $request->search . '%');
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(title) LIKE ?', ['%' . strtolower($search) . '%'])
+                ->orWhereRaw('LOWER(description) LIKE ?', ['%' . strtolower($search) . '%']);
             });
         }
 
