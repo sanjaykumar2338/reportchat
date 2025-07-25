@@ -191,14 +191,21 @@ class MarketplaceController extends Controller
 
     public function myListings(Request $request)
     {
+        // Step 1: Get the date 14 days ago in Mexico timezone
+        $cutoffDate = Carbon::now('America/Mexico_City')->subDays(14)->startOfDay();
+
+        // Step 2: Update listings older than 14 days (only once before querying)
+        MarketplaceListing::where('created_at', '<', $cutoffDate)
+            ->where('is_active', 1)
+            ->update(['is_active' => 0]);
+
+        // Step 3: Continue with user-specific listing query
         $query = MarketplaceListing::where('user_id', Auth::id());
 
-        // Only filter if category_id is present AND valid
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
-        // Only filter if search is non-empty
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->search . '%')
