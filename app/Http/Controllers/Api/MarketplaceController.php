@@ -30,10 +30,7 @@ class MarketplaceController extends Controller
         $query = MarketplaceListing::with('user')
             ->where('is_active', true);
 
-        // Filter by recent 14 days in Mexico timezone
-        $mexicoNow = Carbon::now('America/Mexico_City');
-        $cutoffDate = $mexicoNow->subDays(14);
-        $query->where('created_at', '>=', $cutoffDate);
+        // Removed 14-day filter
 
         // Apply category filter
         if (!is_null($request->category_id)) {
