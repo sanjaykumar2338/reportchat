@@ -27,40 +27,42 @@ class MarketplaceController extends Controller
     {
         Log::info('Marketplace Listing Request:', $request->all());
 
+        // Step 1: Deactivate listings older than 14 days (Mexico timezone)
+        $cutoffDate = Carbon::now('America/Mexico_City')->subDays(14);
+        MarketplaceListing::where('is_active', 1)
+            ->where('created_at', '<', $cutoffDate)
+            ->update(['is_active' => 0]);
+
+        // Step 2: Start query for active listings
         $query = MarketplaceListing::with('user')
-            ->where('is_active', true);
+            ->where('is_active', 1)
+            ->where('created_at', '>=', $cutoffDate);
 
-        // Filter by recent 14 days in Mexico timezone
-        $mexicoNow = Carbon::now('America/Mexico_City');
-        $cutoffDate = $mexicoNow->subDays(14);
-        $query->where('created_at', '>=', $cutoffDate);
-
-        // Apply category filter
+        // Step 3: Filter by category
         if (!is_null($request->category_id)) {
             $query->where('category_id', $request->category_id);
         }
 
-        // Apply search filter
+        // Step 4: Filter by search term
         if ($request->filled('search')) {
             $search = trim($request->search);
             Log::info('Searching for:', ['term' => $search]);
 
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(title) LIKE ?', ['%' . strtolower($search) . '%'])
-                    ->orWhereRaw('LOWER(description) LIKE ?', ['%' . strtolower($search) . '%']);
+                ->orWhereRaw('LOWER(description) LIKE ?', ['%' . strtolower($search) . '%']);
             });
         }
 
-        // Fetch listings
+        // Step 5: Fetch results
         $listings = $query->latest()->get();
 
-        // Log result summary
         Log::info('Marketplace Listing Results:', [
             'count' => $listings->count(),
             'titles' => $listings->pluck('title')
         ]);
 
-        // Transform image URLs
+        // Step 6: Transform image URLs
         $listings->transform(function ($listing) {
             $listing->images = $this->fullImageUrls($listing->images);
             return $listing;
