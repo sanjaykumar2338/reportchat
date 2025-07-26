@@ -171,7 +171,7 @@ class RoomApiController extends Controller
 
 
             $weekday = $date->dayOfWeek;
-            $repeatOption = $data['repeat_option'] ?? 'none';
+            $repeatOption = $data['repeat_period'] ?? 'none';
 
             // =================================================================
             // CORRECTED CONFLICT CHECK LOGIC
