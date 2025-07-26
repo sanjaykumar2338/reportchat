@@ -211,7 +211,7 @@ class RoomApiController extends Controller
 
             if ($recurringConflict > 0 && !$date->isCurrentWeek()) {
                 return response()->json([
-                    'message' => 'You can only book this recurring slot for the current week.',
+                    'message' => 'Time slot already booked for this date.',
                 ], 409);
             }
 
