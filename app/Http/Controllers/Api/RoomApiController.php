@@ -129,7 +129,7 @@ class RoomApiController extends Controller
                 'date' => 'required|date|after_or_equal:today',
                 'start_time' => 'nullable|date_format:H:i',
                 'end_time' => 'nullable|date_format:H:i',
-                'repeat_option' => 'nullable|in:none,weekly',
+                'repeat_period' => 'nullable|in:none,weekly',
                 'all_day' => 'nullable|boolean',
             ]);
 
