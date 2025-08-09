@@ -42,7 +42,7 @@ class AdminCompanyController extends Controller
             'name' => $request->name,
         ]);
 
-        return redirect()->route('admin.companies.index')->with('success', 'Company created successfully.');
+        return redirect()->route('admin.companies.index')->with('success', 'Empresa creada correctamente.');
     }
 
     public function edit($id)
@@ -62,7 +62,7 @@ class AdminCompanyController extends Controller
             'name' => $request->name,
         ]);
 
-        return redirect()->route('admin.companies.index')->with('success', 'Company updated successfully.');
+        return redirect()->route('admin.companies.index')->with('success', 'Empresa actualizada correctamente.');
     }
 
     public function destroy($id)
@@ -70,7 +70,7 @@ class AdminCompanyController extends Controller
         $company = Company::findOrFail($id);
         $company->delete();
 
-        return redirect()->route('admin.companies.index')->with('success', 'Company deleted successfully.');
+        return redirect()->route('admin.companies.index')->with('success', 'Empresa eliminada correctamente.');
     }
     
     public function sendNotification(Request $request)
@@ -95,7 +95,7 @@ class AdminCompanyController extends Controller
         $tokenData = $credentials->fetchAuthToken();
 
         if (!isset($tokenData['access_token'])) {
-            return response()->json(['status' => 'error', 'message' => 'FCM access token failed'], 500);
+            return response()->json(['status' => 'error', 'message' => 'Error al obtener el token de acceso de FCM'], 500);
         }
 
         $accessToken = $tokenData['access_token'];
@@ -152,7 +152,7 @@ class AdminCompanyController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Notifications have been sent to the selected recipients.',
+            'message' => 'Las notificaciones se enviaron a los destinatarios seleccionados.',
             'accessToken' => $accessToken,
             'res' => $res,
         ]);

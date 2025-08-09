@@ -48,7 +48,8 @@ class ReservationController extends Controller
 
         RoomReservation::create($validated);
 
-        return redirect()->route('admin.reservations.index')->with('success', 'Reservation created successfully.');
+        return redirect()->route('admin.reservations.index')
+            ->with('success', 'Reserva creada exitosamente.');
     }
 
     public function edit(RoomReservation $reservation)
@@ -73,17 +74,18 @@ class ReservationController extends Controller
 
         $reservation->update($validated);
 
-        return redirect()->route('admin.reservations.index')->with('success', 'Reservation updated successfully.');
+        return redirect()->route('admin.reservations.index')
+            ->with('success', 'Reserva actualizada exitosamente.');
     }
 
     public function destroy(RoomReservation $reservation)
     {
         $reservation->update([
-            'status' => 1, // 1 = Cancelled, 0 = Active
+            'status' => 1, // 1 = Cancelada, 0 = Activa
         ]);
 
         return redirect()->route('admin.reservations.index')
-            ->with('success', 'Reservation cancelled successfully.');
+            ->with('success', 'Reserva cancelada exitosamente.');
     }
 
     public function calendar(Request $request)

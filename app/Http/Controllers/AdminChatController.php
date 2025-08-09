@@ -49,7 +49,7 @@ class AdminChatController extends Controller
             'is_admin' => true,
         ]);
 
-        return redirect()->route('admin.view.chat', $chat_id)->with('success', 'Message sent successfully.');
+        return redirect()->route('admin.view.chat', $chat_id)->with('success', 'Estado actualizado correctamente.');
     }
 
     public function updateStatus(Request $request, $chat_id)
@@ -62,7 +62,7 @@ class AdminChatController extends Controller
         $chat->status = $request->status;
         $chat->save();
 
-        return response()->json(['success' => true, 'message' => 'Status updated successfully.']);
+        return response()->json(['success' => true, 'message' => 'Estado actualizado correctamente.']);
     }
 
     public function fetchMessages($chat_id)
@@ -196,8 +196,8 @@ class AdminChatController extends Controller
                     "message" => [
                         "token" => $user->fcm_token,
                         "notification" => [
-                            "title" => "New Message from Admin",
-                            "body" => "Message in Chat #{$chat_id}",
+                            "title" => "Nuevo mensaje del administrador",
+                            "body" => "Tienes un nuevo mensaje en el chat #{$chat_id}",
                         ],
                         "data" => [
                             "chat_id" => (string) $chat_id,
@@ -232,7 +232,7 @@ class AdminChatController extends Controller
         // Return JSON response
         return response()->json([
             'success' => true,
-            'message' => 'Message sent and notification triggered',
+            'message' => 'Mensaje enviado y notificación enviada correctamente',
             'chat_message' => $chatMessage,
         ], 201);
     }

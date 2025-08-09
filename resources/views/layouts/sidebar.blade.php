@@ -18,12 +18,12 @@
         color: white;
         display: block;
         transition: 0.3s;
-        border-left: 3px solid transparent; /* Default border */
+        border-left: 3px solid transparent; /* Borde por defecto */
     }
     .sidebar a:hover, 
     .sidebar a.active {
         background-color: #495057;
-        border-left: 3px solid #007bff; /* Highlight active link */
+        border-left: 3px solid #007bff; /* Resaltar enlace activo */
     }
     .content {
         margin-left: 250px;
@@ -41,34 +41,33 @@
     <br>
     <a href="{{ route('admin.dashboard') }}" 
        class="{{ request()->is('admin/dashboard') ? 'active' : '' }}">
-       Dashboard
+       Panel de Administración
     </a>
 
     <a href="{{ route('admin.chats') }}" 
        class="{{ request()->is('admin/chats') || request()->is('admin/chat/*') ? 'active' : '' }}">
-       Reports
+       Reportes
     </a>
 
     <a href="{{ route('admin.users.index') }}" 
        class="{{ request()->is('admin/users') || request()->is('admin/users/*') ? 'active' : '' }}">
-       Users
+       Usuarios
     </a>
 
     <a href="{{ route('admin.companies.index') }}" 
        class="{{ request()->is('admin/companies') || request()->is('admin/companies/*') ? 'active' : '' }}">
-       Companies
+       Empresas
     </a>
 
     <a href="{{ route('admin.rooms.index') }}" 
        class="{{ request()->is('admin/rooms') || request()->is('admin/rooms/*') ? 'active' : '' }}">
-       Rooms
+       Habitaciones
     </a>
 
      <a href="{{ route('admin.reservations.index') }}" 
        class="{{ request()->is('admin/reservations') || request()->is('admin/reservations/*') ? 'active' : '' }}">
-       Reservations
+       Reservas
     </a>
     
-    <a class="" href="{{ route('admin.logout') }}">Logout</a>
+    <a class="" href="{{ route('admin.logout') }}">Cerrar Sesión</a>
 </div>
-

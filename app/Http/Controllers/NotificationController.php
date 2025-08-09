@@ -20,7 +20,7 @@ class NotificationController extends Controller
             if (!$notification) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Notification not found or access denied.',
+                    'message' => 'Notificación no encontrada o acceso denegado.',
                 ], 404);
             }
 
@@ -54,7 +54,7 @@ class NotificationController extends Controller
 
         return response()->json([
             'status' => $deleted ? 'success' : 'error',
-            'message' => $deleted ? 'Notification deleted.' : 'Notification not found or not yours.',
+            'message' => $deleted ? 'Notificación eliminada.' : 'Notificación no encontrada o no es tuya.',
         ]);
     }
 
@@ -69,7 +69,7 @@ class NotificationController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'All notifications cleared.',
+            'message' => 'Todas las notificaciones han sido eliminadas.',
         ]);
     }
 }

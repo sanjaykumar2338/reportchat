@@ -61,7 +61,7 @@ class AdminUserController extends Controller
 
         User::create($validated);
 
-        return redirect()->route('admin.users')->with('success', 'User created successfully.');
+        return redirect()->route('admin.users')->with('success', 'Usuario creado correctamente.');
     }
 
     public function edit($id)
@@ -91,7 +91,7 @@ class AdminUserController extends Controller
 
         $user->update($validated);
 
-        return redirect()->route('admin.users.index')->with('success', 'User updated successfully.');
+        return redirect()->route('admin.users.index')->with('success', 'Usuario actualizado correctamente.');
     }
 
     public function destroy($id)
@@ -99,7 +99,7 @@ class AdminUserController extends Controller
         $user = User::findOrFail($id);
         $user->delete();
 
-        return redirect()->route('admin.users.index')->with('success', 'User deleted successfully.');
+        return redirect()->route('admin.users.index')->with('success', 'Usuario eliminado correctamente.');
     }
 
     public function reservationHistory($userId)

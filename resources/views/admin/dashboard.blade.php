@@ -44,9 +44,9 @@
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-        <a class="navbar-brand" href="{{ route('admin.dashboard') }}">Admin Panel</a>
+        <a class="navbar-brand" href="{{ route('admin.dashboard') }}">Administración</a>
         <div class="ml-auto">
-            <a class="btn btn-danger btn-sm" href="{{ route('admin.logout') }}">Logout</a>
+            <a class="btn btn-danger btn-sm" href="{{ route('admin.logout') }}">Cerrar Sesión</a>
         </div>
     </div>
 </nav>
@@ -64,7 +64,7 @@
             <div class="col-lg-4">
                 <div class="card bg-primary text-white">
                     <div class="card-body">
-                        <h5>Total Reports</h5>
+                        <h5>Reportes Totales</h5>
                         <h3>{{ $totalChats }}</h3>
                     </div>
                 </div>
@@ -72,7 +72,7 @@
             <div class="col-lg-4">
                 <div class="card bg-success text-white">
                     <div class="card-body">
-                        <h5>Total Users</h5>
+                        <h5>Usuarios Totales</h5>
                         <h3>{{ $totalUsers }}</h3>
                     </div>
                 </div>

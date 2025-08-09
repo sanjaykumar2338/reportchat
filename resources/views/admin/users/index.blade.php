@@ -6,22 +6,22 @@
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3" style="margin-left: 176px; width: 92%;">
-        <h2>Users Management</h2>
-        <a href="{{ route('admin.users.create') }}" class="btn btn-success">+ Create User</a>
+        <h2>Gestión de Usuarios</h2>
+        <a href="{{ route('admin.users.create') }}" class="btn btn-success">+ Crear Usuario</a>
     </div>
 
-    <!-- Search Form -->
+    <!-- Formulario de Búsqueda -->
     <form method="GET" action="{{ route('admin.users.index') }}" style="width: 92%; margin-left: 176px;" class="mb-3">
         <div class="row">
             <div class="col-md-3">
-                <input type="text" name="name" class="form-control" placeholder="Search by Name" value="{{ request('name') }}">
+                <input type="text" name="name" class="form-control" placeholder="Buscar por Nombre" value="{{ request('name') }}">
             </div>
             <div class="col-md-3">
-                <input type="email" name="email" class="form-control" placeholder="Search by Email" value="{{ request('email') }}">
+                <input type="email" name="email" class="form-control" placeholder="Buscar por Correo" value="{{ request('email') }}">
             </div>
             <div class="col-md-6 d-flex">
-                <button type="submit" class="btn btn-primary me-2">Search</button>
-                <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Reset</a>
+                <button type="submit" class="btn btn-primary me-2">Buscar</button>
+                <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Restablecer</a>
             </div>
         </div>
     </form>
@@ -30,11 +30,11 @@
         <thead class="table-dark">
             <tr>
                 <th>ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Company</th>
-                <th>Actions</th>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Teléfono</th>
+                <th>Empresa</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -46,24 +46,24 @@
                     <td>{{ $user->phone }}</td>
                     <td>{{ $user->companyRelation->name ?? '-' }}</td>
                     <td>
-                        <a href="{{ route('admin.users.show', $user->id) }}" class="btn btn-sm btn-info">View</a>
-                        <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-sm btn-warning">Edit</a>
+                        <a href="{{ route('admin.users.show', $user->id) }}" class="btn btn-sm btn-info">Ver</a>
+                        <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-sm btn-warning">Editar</a>
                         <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST" style="display:inline;">
                             @csrf
                             @method('DELETE')
-                            <button onclick="return confirm('Are you sure?')" class="btn btn-sm btn-danger">Delete</button>
+                            <button onclick="return confirm('¿Estás seguro?')" class="btn btn-sm btn-danger">Eliminar</button>
                         </form>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="text-center text-muted"><strong>No users found.</strong></td>
+                    <td colspan="6" class="text-center text-muted"><strong>No se encontraron usuarios.</strong></td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 
-    <!-- Pagination -->
+    <!-- Paginación -->
     <div class="mt-3" style="margin-left: 176px;">
         {{ $users->links('vendor.pagination.bootstrap-5') }}
     </div>

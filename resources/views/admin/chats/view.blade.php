@@ -4,38 +4,38 @@
 @include('layouts.sidebar')
 
 <div class="container mt-4" style="width: 92%; margin-left: 176px;">
-    <h2>Report: {{ $chat->title }}</h2>
-    <p><strong>Location:</strong> {{ $chat->location }}</p>
+    <h2>Reporte: {{ $chat->title }}</h2>
+    <p><strong>Ubicación:</strong> {{ $chat->location }}</p>
 
-    <p><strong>Status:</strong> 
+    <p><strong>Estado:</strong> 
     <span id="status-badge" class="badge bg-{{ 
     ($chat->status == 'pending' ? 'warning' : 
     ($chat->status == 'solved' ? 'success' : 
     ($chat->status == 'refused' ? 'danger' : 'secondary'))) }}">
-    {{ ucfirst($chat->status) }}
+    {{ $chat->status == 'pending' ? 'Pendiente' : ($chat->status == 'solved' ? 'Resuelto' : ($chat->status == 'refused' ? 'Rechazado' : ucfirst($chat->status))) }}
     </span>
 
     </p>
 
-    <!-- Status Dropdown -->
+    <!-- Lista Desplegable de Estado -->
     <div class="mb-3">
-        <label for="status" class="form-label"><strong>Change Status:</strong></label>
+        <label for="status" class="form-label"><strong>Cambiar Estado:</strong></label>
         <select id="status" class="form-control" data-chat-id="{{ $chat->id }}">
-            <option value="pending" {{ $chat->status == 'pending' ? 'selected' : '' }}>Pending</option>
-            <option value="refused" {{ $chat->status == 'refused' ? 'selected' : '' }}>Refused</option>
-            <option value="solved" {{ $chat->status == 'solved' ? 'selected' : '' }}>Solved</option>
+            <option value="pending" {{ $chat->status == 'pending' ? 'selected' : '' }}>Pendiente</option>
+            <option value="refused" {{ $chat->status == 'refused' ? 'selected' : '' }}>Rechazado</option>
+            <option value="solved" {{ $chat->status == 'solved' ? 'selected' : '' }}>Resuelto</option>
         </select>
     </div>
 
-    <h4>Messages</h4>
+    <h4>Mensajes</h4>
     <div class="border p-3 mb-3 chat-container" id="chat-box">
         @foreach($chat->messages as $message)
             <div class="chat-message {{ $message->is_admin ? 'admin-message' : 'user-message' }}">
                 <div class="{{ $message->is_admin ? 'admin-message-box' : 'user-message-box' }}">
-                    <p class="username">{{ $message->is_admin ? 'Admin' : $message->user->name }}</p>
+                    <p class="username">{{ $message->is_admin ? 'Administrador' : $message->user->name }}</p>
                     <p class="message-text">{{ $message->message }}</p>
                     @if($message->image)
-                        <br><img src="{{ asset($message->image) }}" alt="Image" width="100">
+                        <br><img src="{{ asset($message->image) }}" alt="Imagen" width="100">
                     @endif
                 </div>
             </div>
@@ -44,10 +44,10 @@
     <form id="message-form">
         @csrf
         <div class="mb-3">
-            <label class="form-label">Enter Message:</label>
+            <label class="form-label">Escribir mensaje:</label>
             <textarea name="message" class="form-control" required></textarea>
         </div>
-        <button type="submit" class="btn btn-primary">Send</button>
+        <button type="submit" class="btn btn-primary">Enviar</button>
     </form>
 </div>
 
@@ -57,7 +57,6 @@
         let messageDate = new Date(timestamp);
         let today = new Date();
         
-        // If the message is from today, show time only (HH:MM AM/PM)
         if (
             messageDate.getDate() === today.getDate() &&
             messageDate.getMonth() === today.getMonth() &&
@@ -65,9 +64,8 @@
         ) {
             return messageDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
         } 
-        // Otherwise, show only the date (DD MMM YYYY)
         else {
-            return messageDate.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+            return messageDate.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
         }
     }
 
@@ -75,33 +73,26 @@
         if (!text) {
             return '';
         }
-
-        // This regex finds URLs ending in common image formats.
         const urlRegex = /(https?:\/\/\S+\.(?:jpg|jpeg|png|gif|webp|svg))/gi;
 
         return text.replace(urlRegex, (url) => {
-            // For each URL found, replace it with this HTML structure.
             return `
-                <a href="${url}" target="_blank" class="chat-image-link" title="Open image in new tab">
-                    <img src="${url}" alt="Image from URL" class="chat-image" style="max-width: 250px; border-radius: 8px; margin-top: 5px; display: block;">
+                <a href="${url}" target="_blank" class="chat-image-link" title="Abrir imagen en nueva pestaña">
+                    <img src="${url}" alt="Imagen desde URL" class="chat-image" style="max-width: 250px; border-radius: 8px; margin-top: 5px; display: block;">
                 </a>
             `;
         });
     }
 
-    /**
-     * Fetches and displays all messages for the current chat.
-     */
-
     function fetchMessages() {
         let chatId = "{{ $chat->id }}";
-        let loggedUserId = "{{ auth()->id() }}"; // Get logged-in user ID
+        let loggedUserId = "{{ auth()->id() }}";
 
         fetch(`/admin/chats/${chatId}/messages`)
             .then(response => response.json())
             .then(data => {
                 let chatBox = document.getElementById("chat-box");
-                chatBox.innerHTML = ""; // Clear old messages
+                chatBox.innerHTML = "";
 
                 data.messages.forEach(message => {
                     let messageDiv = document.createElement("div");
@@ -115,18 +106,18 @@
                     let messageBoxDiv = document.createElement("div");
                     messageBoxDiv.classList.add(isAdmin ? "admin-message-box" : "user-message-box");
 
-                    let username = isAdmin ? "Admin" : (message.user.name ? message.user.name : "User");
-                    let timestamp = formatTimestamp(message.created_at); // Format timestamp
+                    let username = isAdmin ? "Administrador" : (message.user.name ? message.user.name : "Usuario");
+                    let timestamp = formatTimestamp(message.created_at);
 
                     let imageHtml = '';
                     if (message.image) {
                         imageHtml = `
                             <br>
                             <a href="${message.image}" target="_blank" class="chat-image-link">
-                                <img src="${message.image}" alt="Image" class="chat-image" width="100">
+                                <img src="${message.image}" alt="Imagen" class="chat-image" width="100">
                             </a>
                             <br>
-                            <a style="display:none;" href="${message.image}" download class="btn btn-sm btn-primary mt-2">Download</a>
+                            <a style="display:none;" href="${message.image}" download class="btn btn-sm btn-primary mt-2">Descargar</a>
                         `;
                     }
 
@@ -140,65 +131,10 @@
                     messageDiv.appendChild(messageBoxDiv);
                     chatBox.appendChild(messageDiv);
                 });
-
-                //chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest message
             })
-            .catch(error => console.error("Error fetching messages:", error));
-    }
-     
-    function fetchMessages22() {
-        let chatId = "{{ $chat->id }}";
-        let loggedUserId = "{{ auth()->id() }}"; // Get logged-in user ID
-
-        fetch(`/admin/chats/${chatId}/messages`)
-            .then(response => response.json())
-            .then(data => {
-                let chatBox = document.getElementById("chat-box");
-                chatBox.innerHTML = ""; // Clear old messages
-
-                data.messages.forEach(message => {
-                    let messageDiv = document.createElement("div");
-                    let isAdmin = message.is_admin;
-
-                    messageDiv.classList.add("chat-message");
-                    messageDiv.classList.add(isAdmin ? "admin-message" : "user-message");
-
-                    let messageBoxDiv = document.createElement("div");
-                    messageBoxDiv.classList.add(isAdmin ? "admin-message-box" : "user-message-box");
-
-                    let username = isAdmin ? "Admin" : (message.user && message.user.name ? message.user.name : "User");
-                    let timestamp = formatTimestamp(message.created_at);
-
-                    // --- NEW LOGIC: Process the message text to find and render images ---
-                    // The formatMessage function handles the logic of finding and replacing image URLs.
-                    const formattedMessageContent = formatMessage(message.message);
-
-                    // Construct the final message box HTML
-                    messageBoxDiv.innerHTML = `
-                        <p class="username">${username}</p>
-                            <div class="message-text">${formattedMessageContent}</div>
-                        <p class="message-time">${timestamp}</p>
-                    `;
-
-                    messageDiv.appendChild(messageBoxDiv);
-                    chatBox.appendChild(messageDiv);
-                });
-
-                //chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to latest message
-            })
-            .catch(error => console.error("Error fetching messages:", error));
+            .catch(error => console.error("Error al obtener mensajes:", error));
     }
 
-
-    // Example timestamp formatter (if you don't have one)
-    function formatTimestamp(timestamp) {
-        if (!timestamp) return '';
-        const date = new Date(timestamp);
-        // As it's late in India, using a 24-hour format might be suitable, but we'll stick to AM/PM.
-        return date.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
-    }
-
-    // Auto-refresh every 10 seconds
     setInterval(fetchMessages, 5000);
     fetchMessages();
     
@@ -216,11 +152,11 @@
         let messageInput = document.querySelector("textarea[name='message']");
 
         messageForm.addEventListener("submit", function (e) {
-            e.preventDefault(); // Prevent default form submission
+            e.preventDefault();
 
-            let messageText = messageInput.value.trim(); // Get message input value
+            let messageText = messageInput.value.trim();
 
-            if (messageText === "") return; // Prevent empty messages
+            if (messageText === "") return;
 
             fetch(`/admin/chats/${chatId}/messages`, {
                 method: "POST",
@@ -233,17 +169,17 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    messageInput.value = ""; // Clear message input field after sending
-                    fetchMessages(); // Refresh chatbox with the new message
+                    messageInput.value = "";
+                    fetchMessages();
                     takemeup();
                 }
             })
-            .catch(error => console.error("Error sending message:", error));
+            .catch(error => console.error("Error al enviar mensaje:", error));
         });
     });
 </script>
 
-<!-- AJAX to Update Status -->
+<!-- AJAX para Actualizar Estado -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("status").addEventListener("change", function () {
@@ -262,16 +198,15 @@
             .then(data => {
                 if (data.success) {
                     let statusBadge = document.getElementById("status-badge");
-                    statusBadge.innerText = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                    statusBadge.innerText = newStatus === "pending" ? "Pendiente" : (newStatus === "solved" ? "Resuelto" : (newStatus === "refused" ? "Rechazado" : newStatus));
                     
-                    // Change badge color dynamically
                     statusBadge.className = "badge bg-" + 
                         (newStatus === "solved" ? "success" :
                         (newStatus === "pending" ? "warning" :
                         (newStatus === "refused" ? "danger" : "secondary")));
                 }
             })
-            .catch(error => console.error("Error updating status:", error));
+            .catch(error => console.error("Error al actualizar estado:", error));
         });
     });
 </script>
@@ -295,7 +230,7 @@
         padding: 10px;
         border-radius: 10px;
         max-width: 60%;
-        margin-left: auto; /* Moves user messages to the right */
+        margin-left: auto;
     }
 
     .username {
@@ -310,8 +245,8 @@
     }
 
     .chat-container {
-        max-height: 300px;  /* Adjust this height if needed */
-        overflow-y: auto;   /* Enables vertical scrolling */
+        max-height: 300px;
+        overflow-y: auto;
         padding: 10px;
         border-radius: 5px;
         background-color: #f8f9fa;

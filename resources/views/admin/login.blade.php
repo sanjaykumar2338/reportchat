@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafeTower Naucalpan - Admin Login</title>
+    <title>SafeTower Naucalpan - Panel de Administración</title>
     
     <link rel="icon" type="image/x-icon" href="{{asset('images/fav.webp')}}">
 
@@ -39,14 +39,14 @@
 
 <div class="login-container">
     <div class="login-card">
-        <h2 class="login-title">SafeTower Naucalpan </h2>
+        <h2 class="login-title">SafeTower Naucalpan</h2>
         
-        <!-- Display general login errors -->
+        <!-- Mostrar errores generales de inicio de sesión -->
         @if(session('error'))
             <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
 
-        <!-- Display all validation errors -->
+        <!-- Mostrar todos los errores de validación -->
         @if ($errors->any())
             <div class="alert alert-danger">
                 <ul class="mb-0">
@@ -60,7 +60,7 @@
         <form action="{{ route('admin.login') }}" method="POST">
             @csrf
             <div class="mb-3">
-                <label class="form-label">Email:</label>
+                <label class="form-label">Correo electrónico:</label>
                 <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" required>
                 @error('email')
                     <div class="invalid-feedback">{{ $message }}</div>
@@ -68,14 +68,14 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Password:</label>
+                <label class="form-label">Contraseña:</label>
                 <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" required>
                 @error('password')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
 
-            <button type="submit" class="btn btn-primary w-100">Login</button>
+            <button type="submit" class="btn btn-primary w-100">Iniciar Sesión</button>
         </form>
     </div>
 </div>

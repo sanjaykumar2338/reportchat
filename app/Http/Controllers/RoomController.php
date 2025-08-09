@@ -54,7 +54,7 @@ class RoomController extends Controller
 
         Room::create($validated);
 
-        return redirect()->route('admin.rooms.index')->with('success', 'Room created successfully.');
+        return redirect()->route('admin.rooms.index')->with('success', 'Sala creada correctamente.');
     }
 
     public function edit(Room $room)
@@ -76,13 +76,13 @@ class RoomController extends Controller
             'capacity' => 'required|integer|min:1',
         ]);
 
-        // Handle image removal if requested
+        // Eliminar imagen si se solicitó
         if ($request->has('remove_image') && $room->image_url) {
             Storage::disk('public')->delete($room->image_url);
             $validated['image_url'] = null;
         }
 
-        // Handle new image upload
+        // Subir nueva imagen si existe
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('rooms', 'public');
             $validated['image_url'] = $imagePath;
@@ -90,12 +90,12 @@ class RoomController extends Controller
 
         $room->update($validated);
 
-        return redirect()->route('admin.rooms.index')->with('success', 'Room updated successfully.');
+        return redirect()->route('admin.rooms.index')->with('success', 'Sala actualizada correctamente.');
     }
 
     public function destroy(Room $room)
     {
         $room->delete();
-        return redirect()->route('admin.rooms.index')->with('success', 'Room deleted successfully.');
+        return redirect()->route('admin.rooms.index')->with('success', 'Sala eliminada correctamente.');
     }
 }

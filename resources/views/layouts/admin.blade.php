@@ -1,28 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafeTower Naucalpan - Admin Panel</title>
+    <title>SafeTower Naucalpan - Panel de Administración</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- In your layout or reservation index -->
+    <!-- En tu diseño o índice de reservas -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
     <link rel="icon" type="image/x-icon" href="{{asset('images/fav.webp')}}">
 </head>
 <body>
 
-<!-- Navbar -->
+<!-- Barra de navegación -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-        <a class="navbar-brand" href="{{ route('admin.dashboard') }}">Admin Panel</a>
+        <a class="navbar-brand" href="{{ route('admin.dashboard') }}">Administración</a>
         <div class="ml-auto">
-            <a class="btn btn-danger btn-sm" href="{{ route('admin.logout') }}">Logout</a>
+            <a class="btn btn-danger btn-sm" href="{{ route('admin.logout') }}">Cerrar Sesión</a>
         </div>
     </div>
 </nav>
 
-<!-- Main Content -->
+<!-- Contenido principal -->
 
 @if(session('success'))
     <div class="alert alert-success" style="text-align:center;">

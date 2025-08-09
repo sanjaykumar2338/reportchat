@@ -5,48 +5,48 @@
 @include('layouts.sidebar')
 
 <div class="container mt-4" style="width: 92%; margin-left: 176px;">
-    <h2>All Reports</h2>
+    <h2>Todos los Reportes</h2>
 
-    <!-- Search and Filter Form -->
+    <!-- Formulario de Búsqueda y Filtro -->
     <form action="{{ route('admin.chats') }}" method="GET" class="mb-3">
         <div class="row">
-            <!-- Search Input -->
+            <!-- Campo de Búsqueda -->
             <div class="col-md-4">
-                <input type="text" name="search" class="form-control" placeholder="Search by title..." value="{{ request('search') }}">
+                <input type="text" name="search" class="form-control" placeholder="Buscar por título..." value="{{ request('search') }}">
             </div>
 
-            <!-- Status Dropdown -->
+            <!-- Lista Desplegable de Estado -->
             <div class="col-md-3">
                 <select name="status" class="form-control">
-                    <option value="">Filter by Status</option>
-                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                    <option value="solved" {{ request('status') == 'solved' ? 'selected' : '' }}>Solved</option>
-                    <option value="refused" {{ request('status') == 'refused' ? 'selected' : '' }}>Refused</option>
+                    <option value="">Filtrar por Estado</option>
+                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pendiente</option>
+                    <option value="solved" {{ request('status') == 'solved' ? 'selected' : '' }}>Resuelto</option>
+                    <option value="refused" {{ request('status') == 'refused' ? 'selected' : '' }}>Rechazado</option>
                 </select>
             </div>
 
-            <!-- Submit Button -->
+            <!-- Botón de Búsqueda -->
             <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Search</button>
+                <button type="submit" class="btn btn-primary w-100">Buscar</button>
             </div>
 
-            <!-- Reset Button -->
+            <!-- Botón de Restablecer -->
             <div class="col-md-2">
-                <a href="{{ route('admin.chats') }}" class="btn btn-secondary w-100">Reset</a>
+                <a href="{{ route('admin.chats') }}" class="btn btn-secondary w-100">Restablecer</a>
             </div>
         </div>
     </form>
 
-    <!-- Reports Table -->
+    <!-- Tabla de Reportes -->
     <table class="table table-bordered">
         <thead class="table-dark">
             <tr>
                 <th>ID</th>
-                <th>Title</th>
-                <th>Location</th>
-                <th>Status</th>
-                <th>Created At</th>
-                <th>Actions</th>
+                <th>Título</th>
+                <th>Ubicación</th>
+                <th>Estado</th>
+                <th>Creado el</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -62,26 +62,26 @@
                                 ($chat->status == 'pending' ? 'warning' : 
                                 ($chat->status == 'refused' ? 'danger' : 'secondary')) 
                             }}" id="status-badge-{{ $chat->id }}">
-                                {{ ucfirst($chat->status) }}
+                                {{ ucfirst($chat->status == 'pending' ? 'pendiente' : ($chat->status == 'solved' ? 'resuelto' : ($chat->status == 'refused' ? 'rechazado' : $chat->status))) }}
                             </span>
                         </td>
                         <td>{{ $chat->created_at->format('d M Y, h:i A') }}</td>
                         <td>
-                            <a href="{{ route('admin.view.chat', $chat->id) }}" class="btn btn-sm btn-primary">View</a>
+                            <a href="{{ route('admin.view.chat', $chat->id) }}" class="btn btn-sm btn-primary">Ver</a>
                         </td>
                     </tr>
                 @endforeach
             @else
                 <tr>
                     <td colspan="6" class="text-center text-muted">
-                        <strong>No results found.</strong>
+                        <strong>No se encontraron resultados.</strong>
                     </td>
                 </tr>
             @endif
         </tbody>
     </table>
 
-    <!-- Pagination -->
+    <!-- Paginación -->
     {{ $chats->links('vendor.pagination.bootstrap-5') }}
 
 </div>

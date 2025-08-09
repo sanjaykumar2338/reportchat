@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\User;
@@ -14,9 +15,9 @@ class AuthController extends Controller
         try {
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255',
-                'username' => 'required|string|max:255|unique:users', // Validate username
-                'email' => 'required|string|email|max:255|unique:users', // Email is optional
-                'phone' => 'nullable|string|max:15', // Phone is optional
+                'username' => 'required|string|max:255|unique:users',
+                'email' => 'nullable|string|email|max:255|unique:users',
+                'phone' => 'nullable|string|max:15',
                 'password' => 'required|string|min:6|confirmed',
                 'fcm_token' => 'nullable'
             ]);
@@ -28,52 +29,57 @@ class AuthController extends Controller
         }
 
         $user = User::create([
-            'name' => $validatedData['name'],
-            'username' => $validatedData['username'],
-            'email' => $validatedData['email'] ?? null,
-            'phone' => $validatedData['phone'] ?? null,
-            'fcm_token' => $validatedData['fcm_token'] ?? null,
-            'password' => Hash::make($validatedData['password']),
+            'name'       => $validatedData['name'],
+            'username'   => $validatedData['username'],
+            'email'      => $validatedData['email'] ?? null,
+            'phone'      => $validatedData['phone'] ?? null,
+            'fcm_token'  => $validatedData['fcm_token'] ?? null,
+            'password'   => Hash::make($validatedData['password']),
         ]);
 
         return response()->json([
-            'message' => 'User registered successfully',
-            'user' => $user
+            'message' => 'Usuario registrado con éxito',
+            'user'    => $user
         ], 201);
     }
 
-    // User Login (Login with either Username or Email)
+    // User Login (Username or Email)
     public function login(Request $request)
     {
         try {
             $validatedData = $request->validate([
-                'username' => 'required|string',
-                'password' => 'required|string',
+                'login'     => 'required|string', // Can be username OR email
+                'password'  => 'required|string',
                 'fcm_token' => 'nullable'
             ]);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors'  => $e->errors()
             ], 422);
         }
 
-        $user = User::where('username', $validatedData['username'])->first();
+        // Allow login with username OR email
+        $user = User::where('username', $validatedData['login'])
+            ->orWhere('email', $validatedData['login'])
+            ->first();
 
         if (!$user || !Hash::check($validatedData['password'], $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+            return response()->json(['message' => 'Credenciales inválidas'], 401);
         }
 
+        // Create Sanctum token
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        if (isset($validatedData['fcm_token'])) {
+        // Update FCM token if provided
+        if (!empty($validatedData['fcm_token'])) {
             $user->update(['fcm_token' => $validatedData['fcm_token']]);
         }
 
         return response()->json([
-            'message' => 'Login successful',
-            'user' => $user,
-            'token' => $token
+            'message' => 'Inicio de sesión exitoso',
+            'user'    => $user,
+            'token'   => $token
         ], 200);
     }
 
@@ -82,6 +88,6 @@ class AuthController extends Controller
     {
         $request->user()->tokens()->delete();
 
-        return response()->json(['message' => 'Logout successful']);
+        return response()->json(['message' => 'Sesión cerrada correctamente']);
     }
 }

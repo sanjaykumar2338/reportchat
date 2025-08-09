@@ -4,27 +4,27 @@
 @include('layouts.sidebar')
 
 <div class="container mt-4">
-    <h2 style="margin-left: 176px;">Companies Management</h2>
+    <h2 style="margin-left: 176px;">Gestión de Empresas</h2>
 
-    <!-- Search Form -->
+    <!-- Formulario de Búsqueda -->
     <form method="GET" action="{{ route('admin.companies.index') }}" style="width: 92%; margin-left: 176px;" class="mb-3">
         <div class="row">
             <div class="col-md-4">
-                <input type="text" name="name" class="form-control" placeholder="Search by Company Name" value="{{ request('name') }}">
+                <input type="text" name="name" class="form-control" placeholder="Buscar por Nombre de Empresa" value="{{ request('name') }}">
             </div>
             <div class="col-md-4">
-                <button type="submit" class="btn btn-primary">Search</button>
-                <a href="{{ route('admin.companies.index') }}" class="btn btn-secondary">Reset</a>
+                <button type="submit" class="btn btn-primary">Buscar</button>
+                <a href="{{ route('admin.companies.index') }}" class="btn btn-secondary">Restablecer</a>
             </div>
             <div class="col-md-4 text-end">
-                <a href="{{ route('admin.companies.create') }}" class="btn btn-success">Add Company</a>
+                <a href="{{ route('admin.companies.create') }}" class="btn btn-success">Agregar Empresa</a>
             </div>
         </div>
     </form>
 
-    <!-- Notification Button -->
+    <!-- Botón de Notificación -->
     <div class="text-end mb-3" style="width: 92%; margin-left: 176px;">
-        <button type="button" id="openNotificationModal" class="btn btn-primary" disabled>Send Notification</button>
+        <button type="button" id="openNotificationModal" class="btn btn-primary" disabled>Enviar Notificación</button>
     </div>
 
     <table class="table table-bordered" style="width: 92%; margin-left: 176px;">
@@ -32,9 +32,9 @@
             <tr>
                 <th><input type="checkbox" id="selectAllCompanies"></th>
                 <th>ID</th>
-                <th>Company Name</th>
-                <th>Created At</th>
-                <th>Actions</th>
+                <th>Nombre de la Empresa</th>
+                <th>Creada el</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -46,11 +46,11 @@
                     <td>{{ $company->name }}</td>
                     <td>{{ $company->created_at->format('d M Y') }}</td>
                     <td>
-                        <a href="{{ route('admin.companies.edit', $company->id) }}" class="btn btn-sm btn-warning">Edit</a>
+                        <a href="{{ route('admin.companies.edit', $company->id) }}" class="btn btn-sm btn-warning">Editar</a>
                         <form action="{{ route('admin.companies.destroy', $company->id) }}" method="POST" style="display:inline;">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro?')">Eliminar</button>
                         </form>
                     </td>
                 </tr>
@@ -58,23 +58,23 @@
             @else
                 <tr>
                     <td colspan="5" class="text-center text-muted">
-                        <strong>No companies found.</strong>
+                        <strong>No se encontraron empresas.</strong>
                     </td>
                 </tr>
             @endif
         </tbody>
     </table>
 
-    <!-- Pagination -->
+    <!-- Paginación -->
     {{ $companies->links('vendor.pagination.bootstrap-5') }}
 </div>
 
-<!-- Notification Modal -->
+<!-- Modal de Notificación -->
 <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content p-4 shadow-sm">
       <div class="modal-header border-bottom">
-        <h5 class="modal-title fw-bold">Send Notification</h5>
+        <h5 class="modal-title fw-bold">Enviar Notificación</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -82,14 +82,14 @@
           @csrf
           <input type="hidden" name="companies" id="selectedCompanies">
           <div class="mb-3">
-            <label>Notification Title</label>
+            <label>Título de la Notificación</label>
             <input type="text" class="form-control" name="title" required />
           </div>
           <div class="mb-3">
-            <label>Message</label>
+            <label>Mensaje</label>
             <textarea class="form-control" name="message" rows="4" required></textarea>
           </div>
-          <button type="submit" class="btn btn-success">Send</button>
+          <button type="submit" class="btn btn-success">Enviar</button>
         </form>
       </div>
     </div>
@@ -131,11 +131,10 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(res => res.json())
         .then(data => {
-            alert(data.message || 'Notification sent!');
-            //location.reload();
+            alert(data.message || '¡Notificación enviada!');
         })
         .catch(err => {
-            alert('Error sending notification');
+            alert('Error al enviar la notificación');
         });
     });
 
