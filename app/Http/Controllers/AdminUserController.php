@@ -58,7 +58,7 @@ class AdminUserController extends Controller
             'company' => 'nullable|exists:companies,id',
         ]);
 
-        $validated['password'] = bcrypt($validated['password']);
+        $validated['password'] = \Hash::make($password),
 
         User::create($validated);
 
@@ -85,7 +85,7 @@ class AdminUserController extends Controller
         ]);
 
         if ($request->filled('password')) {
-            $validated['password'] = bcrypt($request->password);
+            $validated['password'] = \Hash::make($password);
         } else {
             unset($validated['password']);
         }

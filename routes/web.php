@@ -74,29 +74,34 @@ Route::get('/bulk-register', function () {
     foreach ($users as $username => $password) {
         $email = strtolower($username) . '@gmail.com';
 
-        // Skip if username already exists
-        if (User::where('username', $username)->exists()) {
+        // Check if user exists
+        $user = User::where('username', $username)->first();
+
+        if ($user) {
+            // Update password
+            $user->update([
+                'password' => Hash::make($password)
+            ]);
             $results[] = [
                 'username' => $username,
-                'status' => 'already exists',
+                'status' => 'password updated',
+                'email' => $user->email,
             ];
-            continue;
+        } else {
+            // Create new user
+            $user = User::create([
+                'name' => ucfirst(strtolower($username)),
+                'username' => $username,
+                'email' => $email,
+                'phone' => null,
+                'password' => Hash::make($password),
+            ]);
+            $results[] = [
+                'username' => $username,
+                'status' => 'registered',
+                'email' => $email,
+            ];
         }
-
-        // Create the user
-        $user = User::create([
-            'name' => ucfirst(strtolower($username)),
-            'username' => $username,
-            'email' => $email,
-            'phone' => null,
-            'password' => Hash::make($password),
-        ]);
-
-        $results[] = [
-            'username' => $username,
-            'status' => 'registered',
-            'email' => $email,
-        ];
     }
 
     return response()->json($results);
