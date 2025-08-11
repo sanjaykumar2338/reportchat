@@ -72,6 +72,7 @@ class AdminUserController extends Controller
         return view('admin.users.edit', compact('user', 'companies'));
     }
 
+
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
