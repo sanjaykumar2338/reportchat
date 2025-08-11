@@ -48,7 +48,7 @@ class AuthController extends Controller
     {
         try {
             $validatedData = $request->validate([
-                'login'     => 'required|string', // Can be username OR email
+                'username'     => 'required|string', // Can be username OR email
                 'password'  => 'required|string',
                 'fcm_token' => 'nullable'
             ]);
@@ -60,8 +60,8 @@ class AuthController extends Controller
         }
 
         // Allow login with username OR email
-        $user = User::where('username', $validatedData['login'])
-            ->orWhere('email', $validatedData['login'])
+        $user = User::where('username', $validatedData['username'])
+            ->orWhere('email', $validatedData['username'])
             ->first();
 
         if (!$user || !Hash::check($validatedData['password'], $user->password)) {
