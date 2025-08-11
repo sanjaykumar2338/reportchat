@@ -3,23 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Illuminate\Http\Request;
 use App\Models\Chat;
 use App\Models\Company;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class AdminUserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::query();
-        $query->where('email', '!=', 'testuser@example.com');
+        $query = User::query()
+            ->where('email', '!=', 'testuser@example.com');
 
-        // Apply filters if present
         if ($request->filled('name')) {
-            $query->where('name', 'like', '%' . $request->name . '%');
+            $query->where('name', 'like', '%'.$request->name.'%');
         }
+
         if ($request->filled('email')) {
-            $query->where('email', 'like', '%' . $request->email . '%');
+            $query->where('email', 'like', '%'.$request->email.'%');
+        }
+
+        // (Optional) allow searching by username too:
+        if ($request->filled('username')) {
+            $query->where('username', 'like', '%'.$request->username.'%');
         }
 
         $users = $query->latest()->paginate(10);
@@ -35,9 +41,9 @@ class AdminUserController extends Controller
 
     public function dashboard()
     {
-        $totalChats = Chat::count();
-        $totalUsers = User::count();
-        $activeSessions = User::whereNotNull('last_login_at')->count(); // Assuming active users based on login
+        $totalChats     = Chat::count();
+        $totalUsers     = User::count();
+        $activeSessions = User::whereNotNull('last_login_at')->count();
 
         return view('admin.dashboard', compact('totalChats', 'totalUsers', 'activeSessions'));
     }
@@ -51,42 +57,69 @@ class AdminUserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'name'     => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users,username',
+            'email'    => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
-            'phone' => 'nullable|string|max:20',
-            'company' => 'nullable|exists:companies,id',
+            'phone'    => 'nullable|string|max:20',
+            'company'  => 'nullable|exists:companies,id', // select field name in your Blade
         ]);
 
-        $validated['password'] = \Hash::make($request->password);
+        // Normalize
+        $validated['email']    = strtolower(trim($validated['email']));
+        $validated['username'] = trim($validated['username']);
+
+        // Map company select -> company_id column (adjust if your column is different)
+        if (!empty($validated['company'])) {
+            $validated['company_id'] = $validated['company'];
+        }
+        unset($validated['company']);
+
+        // Hash password
+        $validated['password'] = Hash::make($validated['password']);
 
         User::create($validated);
 
-        return redirect()->route('admin.users')->with('success', 'Usuario creado correctamente.');
+        return redirect()->route('admin.users.index')->with('success', 'Usuario creado correctamente.');
     }
 
     public function edit($id)
     {
-        $user = User::findOrFail($id);
+        $user      = User::findOrFail($id);
         $companies = Company::all();
         return view('admin.users.edit', compact('user', 'companies'));
     }
-
 
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'phone' => 'nullable|string|max:20',
+            'name'     => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users,username,' . $user->id,
+            'email'    => 'required|email|unique:users,email,' . $user->id,
+            'phone'    => 'nullable|string|max:20',
             'password' => 'nullable|string|min:6',
-            'company' => 'nullable|exists:companies,id',
+            'company'  => 'nullable|exists:companies,id',
         ]);
 
-        if ($request->filled('password')) {
-            $validated['password'] = \Hash::make($request->password);
+        // Normalize
+        if (isset($validated['email'])) {
+            $validated['email'] = strtolower(trim($validated['email']));
+        }
+        if (isset($validated['username'])) {
+            $validated['username'] = trim($validated['username']);
+        }
+
+        // Map company select -> company_id
+        if (!empty($validated['company'])) {
+            $validated['company_id'] = $validated['company'];
+        }
+        unset($validated['company']);
+
+        // Hash password only if present
+        if (!empty($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);
         }
