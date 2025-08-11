@@ -58,8 +58,7 @@ class AdminUserController extends Controller
             'company' => 'nullable|exists:companies,id',
         ]);
 
-        $validated['password'] = \Hash::make($password);
-
+        $validated['password'] = $request->password;
         User::create($validated);
 
         return redirect()->route('admin.users')->with('success', 'Usuario creado correctamente.');
