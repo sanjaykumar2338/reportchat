@@ -58,7 +58,7 @@ class AdminUserController extends Controller
             'company' => 'nullable|exists:companies,id',
         ]);
 
-        $validated['password'] = \Hash::make($password),
+        $validated['password'] = \Hash::make($password);
 
         User::create($validated);
 
