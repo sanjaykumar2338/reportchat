@@ -10,6 +10,18 @@
         <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Volver</a>
     </div>
 
+    {{-- Display all validation errors --}}
+    @if ($errors->any())
+        <div class="alert alert-danger" style="margin-left: 176px; width: 92%;">
+            <strong>Por favor corrige los siguientes errores:</strong>
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <form action="{{ isset($user) ? route('admin.users.update', $user->id) : route('admin.users.store') }}" method="POST" style="margin-left: 176px; width: 92%;">
         @csrf
         @if(isset($user))
