@@ -58,7 +58,8 @@ class AdminUserController extends Controller
             'company' => 'nullable|exists:companies,id',
         ]);
 
-        $validated['password'] = $request->password;
+        $validated['password'] = \Hash::make($request->password);
+
         User::create($validated);
 
         return redirect()->route('admin.users')->with('success', 'Usuario creado correctamente.');
@@ -85,7 +86,7 @@ class AdminUserController extends Controller
         ]);
 
         if ($request->filled('password')) {
-            $validated['password'] = \Hash::make($password);
+            $validated['password'] = \Hash::make($request->password);
         } else {
             unset($validated['password']);
         }
