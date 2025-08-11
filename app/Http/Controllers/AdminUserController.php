@@ -12,6 +12,7 @@ class AdminUserController extends Controller
     public function index(Request $request)
     {
         $query = User::query();
+        $query->where('email', '!=', 'testuser@example.com');
 
         // Apply filters if present
         if ($request->filled('name')) {
