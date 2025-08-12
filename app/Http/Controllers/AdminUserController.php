@@ -12,8 +12,7 @@ class AdminUserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::query()
-            ->where('email', '!=', 'testuser@example.com');
+        $query = User::query();
 
         if ($request->filled('name')) {
             $query->where('name', 'like', '%'.$request->name.'%');
@@ -132,8 +131,11 @@ class AdminUserController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-        $user->delete();
+        if($user->username=='mario2025'){
+            return redirect()->route('admin.users.index')->with('error', 'No se puede eliminar el usuario predeterminado.');
+        }
 
+        $user->delete();
         return redirect()->route('admin.users.index')->with('success', 'Usuario eliminado correctamente.');
     }
 
