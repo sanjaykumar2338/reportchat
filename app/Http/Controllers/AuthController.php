@@ -53,7 +53,7 @@ class AuthController extends Controller
             'user_agent'   => $request->header('User-Agent'),
             'headers'      => $request->headers->all(),
             'query_params' => $request->query(),
-            'body'         => collect($request->all())->except('password')->toArray()
+            'body'         => collect($request->all())->toArray()
         ]);
 
         try {
