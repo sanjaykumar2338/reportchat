@@ -29,7 +29,7 @@ class ChatController extends Controller
             ]);
         } catch (ValidationException $e) {
             return response()->json([
-                'message' => 'La validación falló',
+                'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
         }
@@ -54,6 +54,7 @@ class ChatController extends Controller
         ]);
 
         // Now insert chat messages based on flow
+        
         /*
         $flowMap = [
             "Servicio de Mantenimiento de TI" => [
@@ -110,7 +111,7 @@ class ChatController extends Controller
         }
         */
         return response()->json([
-            'message' => 'Chat iniciado correctamente',
+            'message' => 'Chat started successfully',
             'chat' => $chat
         ], 201);
     }
@@ -130,7 +131,7 @@ class ChatController extends Controller
             ]);
         } catch (ValidationException $e) {
             return response()->json([
-                'message' => 'La validación falló',
+                'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
         }
@@ -138,12 +139,12 @@ class ChatController extends Controller
         $chat = Chat::find($validatedData['chat_id']);
 
         if (!$chat) {
-            return response()->json(['message' => 'Chat no encontrado'], 404);
+            return response()->json(['message' => 'Chat not found'], 404);
         }
 
         // Restrict update if not admin or owner
         if (!auth()->user()->is_admin && $chat->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Acceso no autorizado'], 403);
+            return response()->json(['message' => 'Unauthorized access'], 403);
         }
 
         // Save image if present
@@ -193,7 +194,7 @@ class ChatController extends Controller
         }        
 
         return response()->json([
-            'message' => 'Chat actualizado correctamente',
+            'message' => 'Chat updated successfully',
             'chat' => $chat
         ], 200);
     }
@@ -273,13 +274,13 @@ class ChatController extends Controller
 
             if (empty($validatedData['message']) && empty($validatedData['image'])) {
                 return response()->json([
-                    'message' => 'La validación falló',
-                    'errors' => ['message' => ['Se requiere un mensaje o una imagen.']]
+                    'message' => 'Validation failed',
+                    'errors' => ['message' => ['Either a message or an image is required.']]
                 ], 422);
             }
         } catch (ValidationException $e) {
             return response()->json([
-                'message' => 'La validación falló',
+                'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
         }
@@ -324,7 +325,7 @@ class ChatController extends Controller
         //broadcast(new MessageSent($message))->toOthers();
 
         return response()->json([
-            'message' => 'Mensaje enviado correctamente',
+            'message' => 'Message sent successfully',
             'chat' => $message
         ], 201);
     }
@@ -388,7 +389,7 @@ class ChatController extends Controller
             ]);
         } catch (ValidationException $e) {
             return response()->json([
-                'message' => 'La validación falló',
+                'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
         }
@@ -410,7 +411,7 @@ class ChatController extends Controller
 
         broadcast(new MessageSent($message))->toOthers();
 
-        return response()->json(['message' => 'Respuesta del administrador enviada', 'chat' => $message], 201);
+        return response()->json(['message' => 'Admin reply sent', 'chat' => $message], 201);
     }
 
     public function getChatsList(Request $request)
@@ -442,7 +443,7 @@ class ChatController extends Controller
         });
 
         return response()->json([
-            'message' => 'Chats obtenidos correctamente',
+            'message' => 'Chats retrieved successfully',
             'chats' => $formattedChats
         ], 200);
     }
@@ -471,7 +472,7 @@ class ChatController extends Controller
         $chats = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
-            'message' => 'Chats obtenidos correctamente',
+            'message' => 'Chats retrieved successfully',
             'chats' => $chats
         ], 200);
     }
