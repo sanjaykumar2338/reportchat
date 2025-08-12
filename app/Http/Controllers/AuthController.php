@@ -57,34 +57,48 @@ class AuthController extends Controller
         ]);
 
         try {
-            $validatedData = $request->validate([
-                'username' => 'required|string',
-                'password' => 'required|string',
-                'fcm_token' => 'nullable'
+            $validated = $request->validate([
+                'username'  => 'required|string',   // can be username or email
+                'password'  => 'required|string',
+                'fcm_token' => 'nullable|string',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
+                'status'  => 422,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors'  => $e->errors(),
             ], 422);
         }
 
-        $user = User::where('username', $validatedData['username'])->first();
+        $loginId = trim($validated['username']);
+        // Try username first, then email
+        $user = \App\Models\User::where('username', $loginId)
+            ->orWhere('email', strtolower($loginId))
+            ->first();
 
-        if (!$user || !Hash::check($validatedData['password'], $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+        if (!$user || !Hash::check($validated['password'], $user->password)) {
+            Log::warning('Invalid credentials', ['loginId' => $loginId]);
+            return response()->json([
+                'status'  => 401,
+                'message' => 'Invalid credentials',
+            ], 401);
         }
 
+        // Optional: update last_login_at
+        // $user->last_login_at = now();
+
+        if (!empty($validated['fcm_token'])) {
+            $user->fcm_token = $validated['fcm_token'];
+        }
+
+        $user->save();
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        if (isset($validatedData['fcm_token'])) {
-            $user->update(['fcm_token' => $validatedData['fcm_token']]);
-        }
-
         return response()->json([
+            'status'  => 200,
             'message' => 'Login successful',
-            'user' => $user,
-            'token' => $token
+            'user'    => $user,
+            'token'   => $token,
         ], 200);
     }
 
