@@ -49,15 +49,16 @@ class AuthController extends Controller
     public function login(Request $request)
     {
 
-    Log::info('Login API Request Details', [
-        'method'       => $request->method(),
-        'full_url'     => $request->fullUrl(),
-        'ip_address'   => $request->ip(),
-        'user_agent'   => $request->header('User-Agent'),
-        'headers'      => $request->headers->all(),
-        'query_params' => $request->query(),
-        'body'         => collect($request->all())->except('password')->toArray()
-    ]);
+        Log::info('Login API Request Details', [
+            'method'       => $request->method(),
+            'full_url'     => $request->fullUrl(),
+            'ip_address'   => $request->ip(),
+            'user_agent'   => $request->header('User-Agent'),
+            'headers'      => $request->headers->all(),
+            'query_params' => $request->query(),
+            'body'         => collect($request->all())->toArray()
+        ]);
+
         try {
             $validatedData = $request->validate([
                 'username'     => 'required|string', // Can be username OR email
