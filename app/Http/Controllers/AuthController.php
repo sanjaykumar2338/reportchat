@@ -5,6 +5,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -45,6 +46,16 @@ class AuthController extends Controller
     // User Login (Login with either Username or Email)
     public function login(Request $request)
     {
+        Log::info('Login API Request Details', [
+            'method'       => $request->method(),
+            'full_url'     => $request->fullUrl(),
+            'ip_address'   => $request->ip(),
+            'user_agent'   => $request->header('User-Agent'),
+            'headers'      => $request->headers->all(),
+            'query_params' => $request->query(),
+            'body'         => collect($request->all())->except('password')->toArray()
+        ]);
+
         try {
             $validatedData = $request->validate([
                 'username' => 'required|string',
