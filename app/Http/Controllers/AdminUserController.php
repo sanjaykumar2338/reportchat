@@ -72,7 +72,8 @@ class AdminUserController extends Controller
         if (!empty($validated['company'])) {
             $validated['company_id'] = $validated['company'];
         }
-        unset($validated['company']);
+
+        //unset($validated['company']);
 
         // Hash password
         $validated['password'] = Hash::make($validated['password']);
@@ -114,8 +115,8 @@ class AdminUserController extends Controller
         if (!empty($validated['company'])) {
             $validated['company_id'] = $validated['company'];
         }
-        unset($validated['company']);
-
+        
+        //unset($validated['company']);
         // Hash password only if present
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
