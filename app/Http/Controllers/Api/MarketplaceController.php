@@ -27,34 +27,36 @@ class MarketplaceController extends Controller
     {
         Log::info('Marketplace Listing Request:', $request->all());
 
-        // Step 1: Deactivate listings older than 14 days (Mexico timezone)
-        $cutoffDate = Carbon::now('America/Mexico_City')->subDays(14);
+        // Use Mexico City clock for comparisons
+        $nowMx = Carbon::now('America/Mexico_City');
+
+        // 1) Auto-deactivate anything past its end date
         MarketplaceListing::where('is_active', 1)
-            ->where('created_at', '<', $cutoffDate)
+            ->whereNotNull('ends_at')
+            ->where('ends_at', '<', $nowMx)
             ->update(['is_active' => 0]);
 
-        // Step 2: Start query for active listings
+        // 2) Active listings: ends_at in the future (or null, if you allow no expiry)
         $query = MarketplaceListing::with('user')
             ->where('is_active', 1)
-            ->where('created_at', '>=', $cutoffDate);
+            ->where(function ($q) use ($nowMx) {
+                $q->whereNull('ends_at')       // keep if you want to show no-expiry items
+                ->orWhere('ends_at', '>=', $nowMx);
+            });
 
-        // Step 3: Filter by category
+        // (keep your category/search filters)
         if (!is_null($request->category_id)) {
             $query->where('category_id', $request->category_id);
         }
-
-        // Step 4: Filter by search term
         if ($request->filled('search')) {
             $search = trim($request->search);
             Log::info('Searching for:', ['term' => $search]);
-
             $query->where(function ($q) use ($search) {
-                $q->whereRaw('LOWER(title) LIKE ?', ['%' . strtolower($search) . '%'])
-                ->orWhereRaw('LOWER(description) LIKE ?', ['%' . strtolower($search) . '%']);
+                $q->whereRaw('LOWER(title) LIKE ?', ['%'.strtolower($search).'%'])
+                ->orWhereRaw('LOWER(description) LIKE ?', ['%'.strtolower($search).'%']);
             });
         }
 
-        // Step 5: Fetch results
         $listings = $query->latest()->get();
 
         Log::info('Marketplace Listing Results:', [
@@ -80,7 +82,7 @@ class MarketplaceController extends Controller
 
         $listing = new MarketplaceListing($data);
         $listing->user_id = Auth::id();
-        $listing->is_active = true;
+        $listing->is_active = 1;
         $listing->published_at = now();
         $listing->ends_at = now()->addDays(14);
         $listing->save();
@@ -151,7 +153,7 @@ class MarketplaceController extends Controller
     public function toggleStatus($id)
     {
         $listing = MarketplaceListing::where('user_id', Auth::id())->findOrFail($id);
-        $listing->is_active = !$listing->is_active;
+        $listing->is_active = $listing->is_active ? 0 : 1;
 
         if ($listing->is_active) {
             $listing->published_at = now();
@@ -180,7 +182,7 @@ class MarketplaceController extends Controller
         $listing = MarketplaceListing::where('user_id', Auth::id())->findOrFail($id);
         $listing->published_at = now();
         $listing->ends_at = now()->addDays(14);
-        $listing->is_active = true;
+        $listing->is_active = 1;
         $listing->save();
 
         $listing->images = $this->fullImageUrls($listing->images);
@@ -193,29 +195,40 @@ class MarketplaceController extends Controller
 
     public function myListings(Request $request)
     {
-        // Step 1: Get the date 14 days ago in Mexico timezone
-        $cutoffDate = Carbon::now('America/Mexico_City')->subDays(14)->startOfDay();
+        $nowMx = Carbon::now('America/Mexico_City');
 
-        // Step 2: Update listings older than 14 days (only once before querying)
-        MarketplaceListing::where('created_at', '<', $cutoffDate)
-            ->where('is_active', 1)
+        // 1) Deactivate expired listings based on ends_at
+        MarketplaceListing::where('is_active', 1)
+            ->whereNotNull('ends_at')
+            ->where('ends_at', '<', $nowMx)
             ->update(['is_active' => 0]);
 
-        // Step 3: Continue with user-specific listing query
+        // 2) User-specific query
         $query = MarketplaceListing::where('user_id', Auth::id());
+
+        // If you want to show only active & not expired, uncomment this:
+        // $query->where('is_active', 1)
+        //       ->where(function ($q) use ($nowMx) {
+        //           $q->whereNull('ends_at')->orWhere('ends_at', '>=', $nowMx);
+        //       });
 
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
         if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('title', 'like', '%' . $request->search . '%')
-                ->orWhere('description', 'like', '%' . $request->search . '%');
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%'.$search.'%')
+                ->orWhere('description', 'like', '%'.$search.'%');
             });
         }
 
-        $listings = $query->latest()->get();
+        // Order by most recently published (fallback to created_at)
+        $listings = $query
+            ->orderByDesc('published_at')
+            ->orderByDesc('created_at')
+            ->get();
 
         $listings->transform(function ($listing) {
             $listing->images = $this->fullImageUrls($listing->images);
