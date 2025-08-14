@@ -122,8 +122,11 @@ class AdminMarketplaceController extends Controller
         }
 
         $data['is_active'] = $request->boolean('is_active');
-        $data['images']    = $current;
+        if($data['is_active']) {
+            $data['ends_at'] = now()->addDays(14);
+        }
 
+        $data['images']    = $current;
         $listing->update($data);
 
         return redirect()->route('admin.marketplace.index')
