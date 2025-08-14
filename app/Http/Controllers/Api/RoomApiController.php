@@ -47,15 +47,30 @@ class RoomApiController extends Controller
         $filterStartTime = $request->get('start_time'); // Optional start_time
 
         $rooms = $query->latest()->get()->map(function ($room) use ($date, $slotDuration, $filterStartTime) {
+            $currentDate = Carbon::parse($date);
+
             $reservations = RoomReservation::where('room_id', $room->id)
-                ->where('date', $date)
+                ->where('date', $currentDate->toDateString())
                 ->where('status', 0)
                 ->get(['start_time', 'end_time']);
 
+            $weekday = $currentDate->dayOfWeek;
+            $recurringReservations = RoomReservation::where('room_id', $room->id)
+                ->where('repeat_option', 'weekly')
+                ->where('status', 0)
+                ->get(['date', 'start_time', 'end_time'])
+                ->filter(function ($res) use ($weekday) {
+                    return Carbon::parse($res->date)->dayOfWeek === $weekday;
+                });
+
+            // Merge both sets
+            $allReservations = $reservations->merge($recurringReservations);
+
+            // Room availability times
             $availableFrom = Carbon::createFromTimeString($room->available_from);
             $availableTo   = Carbon::createFromTimeString($room->available_to);
 
-            // Use provided start_time if it's within range
+            // Handle custom start_time filter
             $startTime = $availableFrom;
             if ($filterStartTime) {
                 try {
@@ -64,10 +79,11 @@ class RoomApiController extends Controller
                         $startTime = $parsed;
                     }
                 } catch (\Exception $e) {
-                    // Invalid format - fallback to default start
+                    // Ignore invalid input
                 }
             }
 
+            // Build slots
             $slots = [];
             $currentTime = $startTime->copy();
 
@@ -77,7 +93,7 @@ class RoomApiController extends Controller
 
                 if ($slotEnd->gt($availableTo)) break;
 
-                $isBooked = $reservations->contains(function ($res) use ($slotStart, $slotEnd) {
+                $isBooked = $allReservations->contains(function ($res) use ($slotStart, $slotEnd) {
                     $resStart = Carbon::parse($res->start_time);
                     $resEnd = Carbon::parse($res->end_time);
                     return $slotStart->lt($resEnd) && $slotEnd->gt($resStart);
