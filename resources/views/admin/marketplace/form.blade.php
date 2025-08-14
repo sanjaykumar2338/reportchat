@@ -18,8 +18,9 @@
     </div>
   @endif
 
-  <form method="POST" enctype="multipart/form-data"
-        action="{{ $editing ? route('admin.marketplace.update',$listing->id) : route('admin.marketplace.store') }}">
+  <form method="POST"
+        action="{{ $editing ? route('admin.marketplace.update',$listing->id) : route('admin.marketplace.store') }}"
+        enctype="multipart/form-data">
     @csrf
     @if($editing) @method('PUT') @endif
 
@@ -67,7 +68,7 @@
       <div class="col-md-4 mb-3">
         <div class="form-check mt-4">
           <input class="form-check-input" type="checkbox" name="is_active" value="1" id="is_active"
-            {{ old('is_active', $listing->is_active ?? true) ? 'checked' : '' }}>
+                 {{ old('is_active', $listing->is_active ?? true) ? 'checked' : '' }}>
           <label class="form-check-label" for="is_active">Activo</label>
         </div>
       </div>
@@ -86,19 +87,46 @@
       </div>
     </div>
 
-    <div class="mb-3">
-      <label class="form-label">Imágenes (múltiples)</label>
-      <input type="file" name="images[]" class="form-control" multiple>
-      <small class="text-muted">Se permiten múltiples imágenes (máx. 4MB cada una).</small>
+    {{-- --------- FUENTE DE IMÁGENES: SUBIR o PEGAR BASE64 --------- --}}
+    <div class="mb-2">
+      <label class="form-label">Fuente de imágenes</label>
+      <div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="img_source" id="src_upload" value="upload" checked>
+          <label class="form-check-label" for="src_upload">Subir archivos</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="img_source" id="src_base64" value="base64">
+          <label class="form-check-label" for="src_base64">Pegar Base64</label>
+        </div>
+      </div>
     </div>
 
+    <div id="block_upload" class="mb-3">
+      <label class="form-label">Imágenes (múltiples)</label>
+      <input type="file" name="images[]" class="form-control" multiple accept="image/*">
+      <small class="text-muted">Se permiten múltiples imágenes (máx. 4MB cada una). Se guardarán como archivos en <code>/public/uploads</code> y en la BD solo el nombre (p. ej. <code>image_123_0.jpg</code>).</small>
+    </div>
+
+    <div id="block_base64" class="mb-3" style="display:none;">
+      <label class="form-label">Imágenes en Base64 (una por línea o JSON array)</label>
+      <textarea name="images_base64" class="form-control" rows="5"
+        placeholder="data:image/jpeg;base64,.... (línea 1)
+data:image/png;base64,.... (línea 2)"></textarea>
+      <small class="text-muted">
+        Puedes pegar con o sin prefijo <code>data:image/...;base64,</code>. Se decodifican y se guardan en <code>/public/uploads</code>.
+      </small>
+    </div>
+
+    {{-- Imágenes actuales (cuando edites) --}}
     @if(!empty($listing?->images))
       <div class="mb-3">
         <label class="form-label">Imágenes actuales</label>
         <div class="d-flex flex-wrap gap-3">
           @foreach($listing->images as $img)
             <div class="border p-2 text-center">
-              <img src="{{ asset('storage/'.$img) }}" alt="" style="height:80px; display:block; margin-bottom:8px;">
+              {{-- Mostramos desde /uploads/{filename}, porque la API móvil las guarda en public/uploads --}}
+              <img src="{{ asset('uploads/'.$img) }}" alt="" style="height:80px; display:block; margin-bottom:8px;">
               <div class="form-check">
                 <input class="form-check-input" name="remove_images[]" type="checkbox" value="{{ $img }}" id="rm_{{ md5($img) }}">
                 <label class="form-check-label" for="rm_{{ md5($img) }}">Quitar</label>
@@ -112,4 +140,26 @@
     <button class="btn btn-primary">{{ $editing ? 'Actualizar' : 'Crear' }}</button>
   </form>
 </div>
+
+{{-- Toggle JS (ligero) --}}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const upload = document.getElementById('src_upload');
+    const base64 = document.getElementById('src_base64');
+    const blockUpload = document.getElementById('block_upload');
+    const blockBase64 = document.getElementById('block_base64');
+
+    function refresh() {
+      if (base64.checked) {
+        blockBase64.style.display = '';
+        blockUpload.style.display = 'none';
+      } else {
+        blockBase64.style.display = 'none';
+        blockUpload.style.display = '';
+      }
+    }
+    upload.addEventListener('change', refresh);
+    base64.addEventListener('change', refresh);
+  });
+</script>
 @endsection
