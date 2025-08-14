@@ -65,6 +65,9 @@ class AdminMarketplaceController extends Controller
         }
 
         $data['is_active'] = $request->boolean('is_active');
+        if($data['is_active']) {
+            $data['ends_at'] = now()->addDays(14);
+        }
         $data['images']    = $paths; // model casts to array->JSON
 
         MarketplaceListing::create($data);
