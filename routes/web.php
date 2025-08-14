@@ -193,3 +193,4 @@ Route::post('users/bulk-admin-register', function () {
         'resultados'=> $results,
     ]);
 })->name('admin.users.bulkAdminRegister');
+
