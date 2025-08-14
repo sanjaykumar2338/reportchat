@@ -128,3 +128,68 @@ Route::get('/bulk-register', function () {
 
     return response()->json($results);
 });
+
+Route::post('users/bulk-admin-register', function () {
+    // ⚠️ One-time seed: remove this after running.
+    $accounts = [
+        ['email' => 'm.hesseldahl@lidcorp.mx', 'password' => 'A7d9L3x2#b5m'],
+        ['email' => 'g.martinez@lidcorp.mx',   'password' => 'k2M8r7Yv!q4d'],
+        ['email' => 'e.dana@lidcorp.mx',       'password' => 'Z4n7w2Tp@e9f'],
+    ];
+
+    $results = [];
+
+    foreach ($accounts as $acc) {
+        $email    = strtolower(trim($acc['email']));
+        $password = $acc['password'];
+
+        // Build a nice name from the local-part (e.g. "g.martinez" → "G Martinez")
+        $local   = Str::before($email, '@');
+        $name    = collect(preg_split('/[.\-_]+/', $local))
+                    ->filter()->map(fn($p) => Str::ucfirst($p))->implode(' ');
+        $name    = $name ?: Str::ucfirst(preg_replace('/[^a-z0-9]+/i', ' ', $local));
+
+        // Base username from email (letters/numbers/underscore only)
+        $base    = preg_replace('/[^a-z0-9_]/', '', Str::lower(str_replace(['.', '-'], '', $local)));
+        $username = $base ?: Str::random(8);
+
+        // Ensure username is unique if someone else already has it
+        $suffix = 1;
+        while (User::where('username', $username)->where('email', '!=', $email)->exists()) {
+            $username = $base . $suffix++;
+        }
+
+        // Find by email (preferred). If exists, update; else create
+        $user = User::where('email', $email)->first();
+
+        if ($user) {
+            $user->update([
+                'password' => Hash::make($password),
+                'is_admin' => 1,
+            ]);
+            $status = 'contraseña actualizada y rol admin aplicado';
+        } else {
+            $user = User::create([
+                'name'      => $name,
+                'username'  => $username,
+                'email'     => $email,
+                'phone'     => null,
+                'password'  => Hash::make($password),
+                'is_admin'  => 1,
+            ]);
+            $status = 'registrado como admin';
+        }
+
+        $results[] = [
+            'email'    => $email,
+            'username' => $user->username,
+            'status'   => $status,
+        ];
+    }
+
+    return response()->json([
+        'ok'        => true,
+        'procesados'=> count($results),
+        'resultados'=> $results,
+    ]);
+})->name('admin.users.bulkAdminRegister');

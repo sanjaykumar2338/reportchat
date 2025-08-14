@@ -61,7 +61,7 @@
 
     <a href="{{ route('admin.rooms.index') }}" 
        class="{{ request()->is('admin/rooms') || request()->is('admin/rooms/*') ? 'active' : '' }}">
-       Habitaciones
+       Salas
     </a>
 
      <a href="{{ route('admin.reservations.index') }}" 
@@ -70,11 +70,11 @@
     </a>
 
     <a href="{{ route('admin.marketplace_categories.index') }}" class="{{ request()->is('admin/marketplace_categories') || request()->is('admin/marketplace_categories/*') ? 'active' : '' }}">
-        Categorías del Mercado
+        Categorías del Marketplace
     </a>
 
     <a href="{{ route('admin.marketplace.index') }}" class="{{ request()->is('admin/marketplace') || request()->is('admin/marketplace/*') ? 'active' : '' }}">
-        Anuncios del Mercado
+        Anuncios del Marketplace
     </a>
     
     <a class="" href="{{ route('admin.logout') }}">Cerrar Sesión</a>
