@@ -130,6 +130,7 @@ Route::get('/bulk-register', function () {
 });
 
 Route::get('users/bulk-admin-register', function () {
+    return;
     // ⚠️ One-time seed: remove this after running.
     $accounts = [
         ['email' => 'm.hesseldahl@lidcorp.mx', 'password' => 'A7d9L3x2#b5m'],
