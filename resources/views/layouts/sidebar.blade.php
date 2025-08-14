@@ -68,6 +68,14 @@
        class="{{ request()->is('admin/reservations') || request()->is('admin/reservations/*') ? 'active' : '' }}">
        Reservas
     </a>
+
+    <a href="{{ route('admin.marketplace_categories.index') }}" class="{{ request()->is('admin/marketplace_categories') || request()->is('admin/marketplace_categories/*') ? 'active' : '' }}">
+        Categorías del Mercado
+    </a>
+
+    <a href="{{ route('admin.marketplace.index') }}" class="{{ request()->is('admin/marketplace') || request()->is('admin/marketplace/*') ? 'active' : '' }}">
+        Anuncios del Mercado
+    </a>
     
     <a class="" href="{{ route('admin.logout') }}">Cerrar Sesión</a>
 </div>

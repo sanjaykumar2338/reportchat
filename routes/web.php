@@ -2,6 +2,8 @@
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminChatController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AdminMarketplaceCategoryController;
+use App\Http\Controllers\AdminMarketplaceController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Hash;
 
@@ -51,6 +53,26 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/{reservation}/edit', [\App\Http\Controllers\ReservationController::class, 'edit'])->name('edit');
         Route::put('/{reservation}', [\App\Http\Controllers\ReservationController::class, 'update'])->name('update');
         Route::delete('/{reservation}', [\App\Http\Controllers\ReservationController::class, 'destroy'])->name('destroy');
+    });
+
+    // Marketplace Categories
+    Route::prefix('admin/marketplace_categories')->name('admin.marketplace_categories.')->group(function () {
+        Route::get('/',            [AdminMarketplaceCategoryController::class,'index'])->name('index');
+        Route::get('create',     [AdminMarketplaceCategoryController::class,'create'])->name('create');
+        Route::post('/',           [AdminMarketplaceCategoryController::class,'store'])->name('store');
+        Route::get('/{id}/edit',  [AdminMarketplaceCategoryController::class,'edit'])->name('edit');
+        Route::put('/{id}',       [AdminMarketplaceCategoryController::class,'update'])->name('update');
+        Route::delete('/{id}',    [AdminMarketplaceCategoryController::class,'destroy'])->name('destroy');
+    });
+
+    // Marketplace Listings
+    Route::prefix('admin/marketplace')->name('admin.marketplace.')->group(function () {
+        Route::get('/',            [AdminMarketplaceController::class,'index'])->name('index');
+        Route::get('/create',     [AdminMarketplaceController::class,'create'])->name('create');
+        Route::post('',           [AdminMarketplaceController::class,'store'])->name('store');
+        Route::get('/{id}/edit',  [AdminMarketplaceController::class,'edit'])->name('edit');
+        Route::put('/{id}',       [AdminMarketplaceController::class,'update'])->name('update');
+        Route::delete('/{id}',    [AdminMarketplaceController::class,'destroy'])->name('destroy');
     });
 
     Route::get('/admin/reservations/calendar', [\App\Http\Controllers\ReservationController::class, 'calendar'])->name('admin.reservations.calendar');
