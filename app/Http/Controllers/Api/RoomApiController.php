@@ -368,7 +368,7 @@ class RoomApiController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'This and all following reservations were cancelled.',
+            'message' => 'Only this reservation was cancelled.',
         ]);
     }
 }
