@@ -79,6 +79,7 @@ class AdminUserController extends Controller
         User::create($validated);
         return redirect()->route('admin.users.index')->with('success', 'Usuario creado correctamente.');
     }
+    
 
     public function edit($id)
     {
