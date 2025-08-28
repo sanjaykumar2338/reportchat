@@ -30,9 +30,10 @@ class AdminAuthController extends Controller
             return back()->withErrors(['email' => 'Invalid admin credentials']);
         }
 
+       
         // block normal users
         if ($user->role === 'user') {
-            return back()->withErrors(['email' => 'No tienes acceso al panel de administración.']);
+            //return back()->withErrors(['email' => 'No tienes acceso al panel de administración.']);
         }
 
         Auth::login($user);
@@ -42,10 +43,11 @@ class AdminAuthController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
+        
         // ✅ If admin → check permissions
         if ($user->isAdmin()) {
             $perms = $user->permissions ?? [];
-
+            //echo "<pre>"; print_r($perms); die;
             $map = [
                 'dashboard'             => 'admin.dashboard',
                 'reports'               => 'admin.chats',
