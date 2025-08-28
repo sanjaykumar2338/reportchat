@@ -62,6 +62,7 @@ class AdminUserController extends Controller
             'username' => 'required|unique:users',
             'email'    => 'required|email|unique:users',
             'password' => 'required|min:6',
+            'phone'    => 'nullable|string|max:20',
             'role'     => 'nullable|in:user,admin,superadmin',
             'company'  => 'nullable|exists:companies,id',
         ]);
@@ -96,6 +97,7 @@ class AdminUserController extends Controller
             'email'    => 'required|email|unique:users,email,' . $user->id,
             'password' => 'nullable|min:6',
             'role'     => 'nullable|in:user,admin,superadmin',
+            'phone'    => 'nullable|string|max:20',
             'company'  => 'nullable|exists:companies,id',
         ]);
 
