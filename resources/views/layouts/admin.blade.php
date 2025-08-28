@@ -8,7 +8,7 @@
 
     <!-- En tu diseño o índice de reservas -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
-    <link rel="icon" type="image/x-icon" href="{{asset('images/fav.webp')}}">
+    <link rel="icon" type="image/x-icon" href="{{asset('images/logo.jpeg')}}">
 </head>
 <body>
 
