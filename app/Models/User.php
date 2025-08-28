@@ -26,6 +26,8 @@ class User extends Authenticatable
         'password',
         'fcm_token',
         'company',
+        'role',
+        'permissions',
     ];
 
     /**
@@ -54,5 +56,29 @@ class User extends Authenticatable
     public function companyRelation()
     {
         return $this->belongsTo(Company::class, 'company');
+    }
+
+    protected $casts = [
+        'permissions' => 'array',
+    ];
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'superadmin';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function hasPermission(string $module): bool
+    {
+        if ($this->isSuperAdmin()) return true;
+        $p = $this->permissions ?? [];
+        if (!array_key_exists($module, $p)) return false;
+
+        $v = $p[$module];
+        return ($v === true || $v === 1 || $v === '1' || $v === 'true');
     }
 }

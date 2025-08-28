@@ -1,43 +1,73 @@
 <?php
+
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminChatController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminMarketplaceCategoryController;
 use App\Http\Controllers\AdminMarketplaceController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Hash;
 
-use App\Models\User;
-
-// Admin Login Routes (Using Sessions)
+// ---------------- Admin Login Routes ----------------
 Route::get('/', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
 Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
-
 Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
 Route::post('/admin/login', [AdminAuthController::class, 'login']);
 Route::get('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
 
 
-// Admin Panel Routes (Protected)
-Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/admin/dashboard', [AdminUserController::class, 'dashboard'])->name('admin.dashboard');
+// ---------------- Admin Panel Routes (Protected) ----------------
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
-    // Admin Chat Routes
-    Route::get('/admin/chats', [AdminChatController::class, 'index'])->name('admin.chats');
-    Route::get('/admin/chat/{chat_id}', [AdminChatController::class, 'viewChat'])->name('admin.view.chat');
-    Route::post('/admin/chat/{chat_id}/send', [AdminChatController::class, 'sendMessage'])->name('admin.send.message');
-    Route::post('/admin/chats/{chat_id}/update-status', [AdminChatController::class, 'updateStatus'])->name('admin.update.status');
-    Route::get('/admin/chats/{chat_id}/messages', [AdminChatController::class, 'fetchMessages'])->name('admin.fetch.messages');
-    Route::post('/admin/chats/{chat_id}/messages', [AdminChatController::class, 'sendMessage'])->name('admin.send.message');
+    // Dashboard
+    Route::get('/dashboard', [AdminUserController::class, 'dashboard'])
+        ->name('admin.dashboard')
+        ->middleware('permission:dashboard');
 
-    // Admin Users Management
-    Route::get('/admin/users/{user}/reservations', [AdminUserController::class, 'reservationHistory'])->name('admin.users.reservationHistory');
-    Route::resource('/admin/users', \App\Http\Controllers\AdminUserController::class)->names('admin.users');
-    Route::post('/admin/companies/send-notification', [\App\Http\Controllers\AdminCompanyController::class, 'sendNotification'])->name('admin.companies.sendNotification');
-    Route::resource('admin/companies', \App\Http\Controllers\AdminCompanyController::class)->names('admin.companies');
+    // Chats / Reportes
+    Route::get('/chats', [AdminChatController::class, 'index'])
+        ->name('admin.chats')
+        ->middleware('permission:reports');
 
-    // Admin Room Management Routes
-    Route::prefix('admin/rooms')->name('admin.rooms.')->group(function () {
+    Route::get('/chat/{chat_id}', [AdminChatController::class, 'viewChat'])
+        ->name('admin.view.chat')
+        ->middleware('permission:reports');
+
+    Route::post('/chat/{chat_id}/send', [AdminChatController::class, 'sendMessage'])
+        ->name('admin.send.message')
+        ->middleware('permission:reports');
+
+    Route::post('/chats/{chat_id}/update-status', [AdminChatController::class, 'updateStatus'])
+        ->name('admin.update.status')
+        ->middleware('permission:reports');
+
+    Route::get('/chats/{chat_id}/messages', [AdminChatController::class, 'fetchMessages'])
+        ->name('admin.fetch.messages')
+        ->middleware('permission:reports');
+
+    Route::post('/chats/{chat_id}/messages', [AdminChatController::class, 'sendMessage'])
+        ->name('admin.send.message')
+        ->middleware('permission:reports');
+
+    // Users
+    Route::get('/users/{user}/reservations', [AdminUserController::class, 'reservationHistory'])
+        ->name('admin.users.reservationHistory')
+        ->middleware('permission:users');
+
+    Route::resource('/users', AdminUserController::class)
+        ->names('admin.users')
+        ->middleware('permission:users');
+
+    // Companies
+    Route::post('/companies/send-notification', [\App\Http\Controllers\AdminCompanyController::class, 'sendNotification'])
+        ->name('admin.companies.sendNotification')
+        ->middleware('permission:companies');
+
+    Route::resource('/companies', \App\Http\Controllers\AdminCompanyController::class)
+        ->names('admin.companies')
+        ->middleware('permission:companies');
+
+    // Rooms
+    Route::prefix('rooms')->name('admin.rooms.')->middleware('permission:rooms')->group(function () {
         Route::get('/', [\App\Http\Controllers\RoomController::class, 'index'])->name('index');
         Route::get('/create', [\App\Http\Controllers\RoomController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\RoomController::class, 'store'])->name('store');
@@ -46,8 +76,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::delete('/{room}', [\App\Http\Controllers\RoomController::class, 'destroy'])->name('destroy');
     });
 
-    // Admin Reservation Management Routes
-    Route::prefix('admin/reservations')->name('admin.reservations.')->group(function () {
+    // Reservations
+    Route::prefix('reservations')->name('admin.reservations.')->middleware('permission:reservations')->group(function () {
         Route::get('/', [\App\Http\Controllers\ReservationController::class, 'index'])->name('index');
         Route::get('/create', [\App\Http\Controllers\ReservationController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\ReservationController::class, 'store'])->name('store');
@@ -56,28 +86,37 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::delete('/{reservation}', [\App\Http\Controllers\ReservationController::class, 'destroy'])->name('destroy');
     });
 
+    Route::get('/reservations/calendar', [\App\Http\Controllers\ReservationController::class, 'calendar'])
+        ->name('admin.reservations.calendar')
+        ->middleware('permission:reservations');
+
+    Route::get('/reservations/events', [\App\Http\Controllers\ReservationController::class, 'calendarEvents'])
+        ->name('admin.reservations.events')
+        ->middleware('permission:reservations');
+
     // Marketplace Categories
-    Route::prefix('admin/marketplace_categories')->name('admin.marketplace_categories.')->group(function () {
-        Route::get('/',            [AdminMarketplaceCategoryController::class,'index'])->name('index');
-        Route::get('create',     [AdminMarketplaceCategoryController::class,'create'])->name('create');
-        Route::post('/',           [AdminMarketplaceCategoryController::class,'store'])->name('store');
-        Route::get('/{id}/edit',  [AdminMarketplaceCategoryController::class,'edit'])->name('edit');
-        Route::put('/{id}',       [AdminMarketplaceCategoryController::class,'update'])->name('update');
-        Route::delete('/{id}',    [AdminMarketplaceCategoryController::class,'destroy'])->name('destroy');
+    Route::prefix('marketplace_categories')->name('admin.marketplace_categories.')->middleware('permission:marketplace_categories')->group(function () {
+        Route::get('/', [AdminMarketplaceCategoryController::class,'index'])->name('index');
+        Route::get('create', [AdminMarketplaceCategoryController::class,'create'])->name('create');
+        Route::post('/', [AdminMarketplaceCategoryController::class,'store'])->name('store');
+        Route::get('/{id}/edit', [AdminMarketplaceCategoryController::class,'edit'])->name('edit');
+        Route::put('/{id}', [AdminMarketplaceCategoryController::class,'update'])->name('update');
+        Route::delete('/{id}', [AdminMarketplaceCategoryController::class,'destroy'])->name('destroy');
     });
 
     // Marketplace Listings
-    Route::prefix('admin/marketplace')->name('admin.marketplace.')->group(function () {
-        Route::get('/',            [AdminMarketplaceController::class,'index'])->name('index');
-        Route::get('/create',     [AdminMarketplaceController::class,'create'])->name('create');
-        Route::post('',           [AdminMarketplaceController::class,'store'])->name('store');
-        Route::get('/{id}/edit',  [AdminMarketplaceController::class,'edit'])->name('edit');
-        Route::put('/{id}',       [AdminMarketplaceController::class,'update'])->name('update');
-        Route::delete('/{id}',    [AdminMarketplaceController::class,'destroy'])->name('destroy');
+    Route::prefix('marketplace')->name('admin.marketplace.')->middleware('permission:marketplace')->group(function () {
+        Route::get('/', [AdminMarketplaceController::class,'index'])->name('index');
+        Route::get('/create', [AdminMarketplaceController::class,'create'])->name('create');
+        Route::post('', [AdminMarketplaceController::class,'store'])->name('store');
+        Route::get('/{id}/edit', [AdminMarketplaceController::class,'edit'])->name('edit');
+        Route::put('/{id}', [AdminMarketplaceController::class,'update'])->name('update');
+        Route::delete('/{id}', [AdminMarketplaceController::class,'destroy'])->name('destroy');
     });
 
-    Route::get('/admin/reservations/calendar', [\App\Http\Controllers\ReservationController::class, 'calendar'])->name('admin.reservations.calendar');
-    Route::get('/admin/reservations/events', [\App\Http\Controllers\ReservationController::class, 'calendarEvents'])->name('admin.reservations.events');
+    // Profile (no permission required, only auth)
+    Route::get('/profile', [AdminUserController::class, 'profile'])->name('admin.profile');
+    Route::put('/profile', [AdminUserController::class, 'updateProfile'])->name('admin.profile.update');
 });
 
 Route::get('/bulk-register', function () {

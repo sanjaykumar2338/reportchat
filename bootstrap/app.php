@@ -19,7 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'sanctum' => EnsureFrontendRequestsAreStateful::class,
-            'admin' => AdminMiddleware::class
+            'admin' => AdminMiddleware::class,
+            'permission' => \App\Http\Middleware\CheckPermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

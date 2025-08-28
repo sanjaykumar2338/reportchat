@@ -13,6 +13,8 @@ class AdminUserController extends Controller
     public function index(Request $request)
     {
         $query = User::query();
+        $query = User::query()
+        ->where('role', '!=', 'superadmin');
 
         if ($request->filled('name')) {
             $query->where('name', 'like', '%'.$request->name.'%');
@@ -56,30 +58,24 @@ class AdminUserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-            'phone'    => 'nullable|string|max:20',
-            'company'  => 'nullable|exists:companies,id', // select field name in your Blade
+            'name'     => 'required',
+            'username' => 'required|unique:users',
+            'email'    => 'required|email|unique:users',
+            'password' => 'required|min:6',
+            'role'     => 'nullable|in:user,admin,superadmin',
+            'company'  => 'nullable|exists:companies,id',
         ]);
 
-        // Normalize
-        $validated['email']    = strtolower(trim($validated['email']));
-        $validated['username'] = trim($validated['username']);
+        $validated['password'] = Hash::make($validated['password']);
+        $validated['role'] = $validated['role'] ?? 'user';
+        $validated['company_id'] = $validated['company'] ?? null;
 
-        // Map company select -> company_id column (adjust if your column is different)
-        if (!empty($validated['company'])) {
-            $validated['company_id'] = $validated['company'];
+        if ($validated['role'] === 'admin' && $request->has('permissions')) {
+            $keys = array_keys($request->input('permissions', []));
+            $validated['permissions'] = array_fill_keys($keys, true);
         }
 
-        //unset($validated['company']);
-
-        // Hash password
-        $validated['password'] = Hash::make($validated['password']);
-
         User::create($validated);
-
         return redirect()->route('admin.users.index')->with('success', 'Usuario creado correctamente.');
     }
 
@@ -95,33 +91,28 @@ class AdminUserController extends Controller
         $user = User::findOrFail($id);
 
         $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username,' . $user->id,
+            'name'     => 'required',
+            'username' => 'required|unique:users,username,' . $user->id,
             'email'    => 'required|email|unique:users,email,' . $user->id,
-            'phone'    => 'nullable|string|max:20',
-            'password' => 'nullable|string|min:6',
+            'password' => 'nullable|min:6',
+            'role'     => 'nullable|in:user,admin,superadmin',
             'company'  => 'nullable|exists:companies,id',
         ]);
 
-        // Normalize
-        if (isset($validated['email'])) {
-            $validated['email'] = strtolower(trim($validated['email']));
-        }
-        if (isset($validated['username'])) {
-            $validated['username'] = trim($validated['username']);
-        }
-
-        // Map company select -> company_id
-        if (!empty($validated['company'])) {
-            $validated['company_id'] = $validated['company'];
-        }
-        
-        //unset($validated['company']);
-        // Hash password only if present
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);
+        }
+
+        $validated['company_id'] = $validated['company'] ?? null;
+        $validated['role'] = $validated['role'] ?? $user->role;
+
+        if ($validated['role'] === 'admin' && $request->has('permissions')) {
+            $keys = array_keys($request->input('permissions', []));
+            $validated['permissions'] = array_fill_keys($keys, true);
+        } else {
+            $validated['permissions'] = null;
         }
 
         $user->update($validated);
@@ -144,5 +135,46 @@ class AdminUserController extends Controller
     {
         $user = User::with('reservations.room')->findOrFail($userId);
         return view('admin.users.reservation_history', compact('user'));
+    }
+
+    public function profile()
+    {
+        $user = auth()->user();
+        $companies = \App\Models\Company::all(); // optional if you want company select
+        return view('admin.users.profile', compact('user', 'companies'));
+    }
+
+    public function updateProfile(\Illuminate\Http\Request $request)
+    {
+        $user = auth()->user();
+
+        $validated = $request->validate([
+            'name'     => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users,username,' . $user->id,
+            'email'    => 'required|email|unique:users,email,' . $user->id,
+            'phone'    => 'nullable|string|max:20',
+            'password' => 'nullable|string|min:6',
+            'company'  => 'nullable|exists:companies,id',
+        ]);
+
+        // normalize
+        $validated['email']    = strtolower(trim($validated['email']));
+        $validated['username'] = trim($validated['username']);
+
+        // map company select to company_id (optional)
+        $validated['company_id'] = $validated['company'] ?? $user->company_id ?? null;
+
+        // handle password only if provided
+        if (!empty($validated['password'])) {
+            $validated['password'] = \Illuminate\Support\Facades\Hash::make($validated['password']);
+        } else {
+            unset($validated['password']);
+        }
+
+        unset($validated['company']); // not a column
+
+        $user->update($validated);
+
+        return redirect()->route('admin.profile')->with('success', 'Perfil actualizado correctamente.');
     }
 }

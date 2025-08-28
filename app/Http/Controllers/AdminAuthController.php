@@ -24,15 +24,51 @@ class AdminAuthController extends Controller
             'password' => 'required',
         ]);
 
-        $admin = User::where('email', $request->email)->where('is_admin', true)->first();
+        $user = User::where('email', $request->email)->first();
 
-        if (!$admin || !Hash::check($request->password, $admin->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             return back()->withErrors(['email' => 'Invalid admin credentials']);
         }
 
-        Auth::login($admin);
+        // block normal users
+        if ($user->role === 'user') {
+            return back()->withErrors(['email' => 'No tienes acceso al panel de administración.']);
+        }
 
-        return redirect()->route('admin.dashboard');
+        Auth::login($user);
+
+        // ✅ If superadmin → go to dashboard
+        if ($user->isSuperAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        // ✅ If admin → check permissions
+        if ($user->isAdmin()) {
+            $perms = $user->permissions ?? [];
+
+            $map = [
+                'dashboard'             => 'admin.dashboard',
+                'reports'               => 'admin.chats',
+                'users'                 => 'admin.users.index',
+                'companies'             => 'admin.companies.index',
+                'rooms'                 => 'admin.rooms.index',
+                'reservations'          => 'admin.reservations.index',
+                'marketplace_categories'=> 'admin.marketplace_categories.index',
+                'marketplace'           => 'admin.marketplace.index',
+            ];
+
+            foreach ($map as $perm => $route) {
+                if (!empty($perms[$perm])) {
+                    return redirect()->route($route);
+                }
+            }
+
+            // if no permission at all → profile
+            return redirect()->route('admin.profile');
+        }
+
+        // fallback
+        return redirect()->route('admin.profile');
     }
 
     // Logout Admin
