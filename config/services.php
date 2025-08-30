@@ -24,6 +24,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'whapi' => [
+        'token' => env('WHAPI_TOKEN'), // pulls from .env
+    ],
+
     'resend' => [
         'key' => env('RESEND_KEY'),
     ],
