@@ -236,6 +236,7 @@ class AdminUserController extends Controller
         // normalize
         $validated['email']    = strtolower(trim($validated['email']));
         $validated['username'] = trim($validated['username']);
+        $validated['whatsapp_notifications'] = $request->has('whatsapp_notifications');
 
         // map company select to company_id (optional)
         $validated['company_id'] = $validated['company'] ?? $user->company_id ?? null;

@@ -3,6 +3,28 @@
 @section('content')
 @include('layouts.sidebar')
 
+<style>
+    /* Shake + highlight together */
+    .attention {
+        animation: shakeAnim 0.5s ease, fadeHighlight 1.5s ease-out;
+    }
+
+    @keyframes shakeAnim {
+        0%   { transform: translateX(0); }
+        20%  { transform: translateX(-5px); }
+        40%  { transform: translateX(5px); }
+        60%  { transform: translateX(-5px); }
+        80%  { transform: translateX(5px); }
+        100% { transform: translateX(0); }
+    }
+
+    @keyframes fadeHighlight {
+        0%   { background-color: #fff3cd; }  /* light yellow */
+        50%  { background-color: #e6ffcc; }  /* soft green */
+        100% { background-color: transparent; }
+    }
+</style>
+
 <div class="container mt-4" style="margin-left: 176px; width: 92%;">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Mi Perfil</h2>
@@ -42,10 +64,19 @@
                    value="{{ old('email', $user->email) }}" required>
         </div>
 
-        <div class="mb-3">
+        {{-- Teléfono field --}}
+        <div id="phoneField" class="mb-3">
             <label class="form-label">Teléfono</label>
             <input type="text" name="phone" class="form-control"
-                   value="{{ old('phone', $user->phone) }}">
+                value="{{ old('phone', $user->phone) }}">
+
+            {{-- ✅ Only show helper for admin --}}
+            @if($user->role === 'admin')
+                <small id="phoneHelp" class="form-text text-muted">
+                    Si deseas recibir notificaciones por WhatsApp, ingresa tu número con código de país, sin el signo +
+                    (ejemplo: 5215512345678).
+                </small>
+            @endif
         </div>
 
         <div class="mb-3">
@@ -53,7 +84,7 @@
             <input type="password" name="password" class="form-control">
         </div>
 
-        {{-- Optional company select; remove if not used --}}
+        {{-- Empresa (opcional) --}}
         @isset($companies)
         <div class="mb-3">
             <label class="form-label">Empresa</label>
@@ -69,7 +100,37 @@
         </div>
         @endisset
 
+        {{-- Checkbox only for admin --}}
+        @if($user->role === 'admin')
+            <div class="form-check mb-3">
+                <input type="checkbox" name="whatsapp_notifications" value="1" class="form-check-input"
+                    id="whatsapp_notifications"
+                    {{ old('whatsapp_notifications', $user->whatsapp_notifications ?? false) ? 'checked' : '' }}>
+                <label class="form-check-label" for="whatsapp_notifications">
+                    Recibir notificaciones por WhatsApp
+                </label>
+            </div>
+        @endif
+
         <button type="submit" class="btn btn-primary">Actualizar Perfil</button>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const cb   = document.getElementById('whatsapp_notifications');
+  const phoneField = document.getElementById('phoneField');
+
+  if (cb && phoneField) {
+    cb.addEventListener('change', function () {
+      if (cb.checked) {
+        // restart animation
+        phoneField.classList.remove('attention');
+        void phoneField.offsetWidth;
+        phoneField.classList.add('attention');
+      }
+    });
+  }
+});
+</script>
 @endsection

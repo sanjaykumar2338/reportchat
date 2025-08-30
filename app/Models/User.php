@@ -28,7 +28,8 @@ class User extends Authenticatable
         'company',
         'role',
         'permissions',
-        'report_categories'
+        'report_categories',
+        'whatsapp_notifications'
     ];
 
     /**
@@ -39,6 +40,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'whatsapp_notifications' => 'boolean',
     ];
 
     /**

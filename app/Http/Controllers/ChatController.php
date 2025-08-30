@@ -11,6 +11,7 @@ use Illuminate\Validation\ValidationException;
 use App\Events\MessageSent;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use App\Jobs\SendWhatsAppForChat;
 
 class ChatController extends Controller
 {
@@ -53,63 +54,7 @@ class ChatController extends Controller
             'status' => 'pending',
         ]);
 
-        // Now insert chat messages based on flow
-
-        /*
-        $flowMap = [
-            "Servicio de Mantenimiento de TI" => [
-                "questions" => [
-                    "Selecciona una opción",
-                    "Selecciona el tipo de problema.",
-                    "Específica el lugar (Empresa, Piso, referencias, etc..)",
-                    "Describe a detalle lo que quieres reportar",
-                    "Envíanos una o más imágenes"
-                ],
-                "answers" => [
-                    $validatedData['title'],
-                    $validatedData['sub_type'],
-                    $validatedData['location'],
-                    $validatedData['description'],
-                    $imagePath,
-                ]
-            ],
-            // Add other flows here if needed
-        ];
-
-        $title = $validatedData['title'];
-        $flow = $flowMap[$title] ?? null;
-
-        if ($flow) {
-            foreach ($flow['questions'] as $i => $question) {
-                // Admin prompt
-                ChatMessage::create([
-                    'chat_id' => $chat->id,
-                    'user_id' => $chat->user_id,
-                    'message' => $question,
-                    'is_admin' => true,
-                ]);
-
-                $answer = $flow['answers'][$i];
-
-                // User response
-                ChatMessage::create([
-                    'chat_id' => $chat->id,
-                    'user_id' => $chat->user_id,
-                    'message' => is_string($answer) && !str_starts_with($answer, 'data:image') ? $answer : null,
-                    'image' => str_starts_with($answer, 'storage/') ? $answer : null,
-                    'is_admin' => false,
-                ]);
-            }
-
-            // Final system message
-            ChatMessage::create([
-                'chat_id' => $chat->id,
-                'user_id' => $chat->user_id,
-                'message' => 'Gracias por tu reporte. Será revisado en breve. Te contactaremos por este medio.',
-                'is_admin' => true,
-            ]);
-        }
-        */
+        SendWhatsAppForChat::dispatch($chat->id);
         return response()->json([
             'message' => 'Chat started successfully',
             'chat' => $chat
