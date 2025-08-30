@@ -55,6 +55,7 @@ class ChatController extends Controller
         ]);
 
         SendWhatsAppForChat::dispatch($chat->id);
+        
         return response()->json([
             'message' => 'Chat started successfully',
             'chat' => $chat
