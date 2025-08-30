@@ -12,23 +12,57 @@ class AdminChatController extends Controller
 {
     public function index(Request $request)
     {
+        $user  = auth()->user();
         $query = Chat::query();
-    
-        // Apply search filter
-        if ($request->has('search') && !empty($request->search)) {
-            $query->where('title', 'like', '%' . $request->search . '%');
+
+        // 🔒 If ADMIN: limit by assigned report categories (titles)
+        if ($user->isAdmin() && !$user->isSuperAdmin()) {
+            // Keys saved on the user → labels stored in `chats.title`
+            $labelsMap = [
+                'mantenimiento' => 'Orden de Mantenimiento',
+                'limpieza'      => 'Orden de Limpieza',
+                'ti'            => 'Servicio de Mantenimiento de TI',
+                'quejas_rest'   => 'Quejas y Sugerencias de los Restaurantes',
+                'medico'        => 'Servicio Médico',
+                'incendio_humo' => 'Incendio/Humo',
+                'seguridad'     => 'Seguridad',
+            ];
+
+            $allowedKeys = (array) ($user->report_categories ?? []);
+
+            // map keys → titles
+            $allowedTitles = [];
+            foreach ($allowedKeys as $k) {
+                if (isset($labelsMap[$k])) {
+                    $allowedTitles[] = $labelsMap[$k];
+                }
+            }
+
+            // If no categories assigned → show none (or abort 403 if you prefer)
+            if (empty($allowedTitles)) {
+                // Option A: show nothing
+                $query->whereRaw('1=0');
+                // Option B: abort
+                // abort(403, 'No tienes permisos para ver reportes.');
+            } else {
+                $query->whereIn('title', $allowedTitles);
+            }
         }
-    
-        // Apply status filter
-        if ($request->has('status') && !empty($request->status)) {
+
+        // 🔎 Search
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%'.$request->search.'%');
+        }
+
+        // 🏷️ Status
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-    
-        // Fetch chats with pagination
+
+        // 📄 Pagination
         $chats = $query->orderBy('created_at', 'desc')->paginate(10);
-    
         return view('admin.chats.index', compact('chats'));
-    }    
+    }  
 
     public function viewChat($chat_id)
     {

@@ -28,6 +28,7 @@ class User extends Authenticatable
         'company',
         'role',
         'permissions',
+        'report_categories'
     ];
 
     /**
@@ -60,7 +61,19 @@ class User extends Authenticatable
 
     protected $casts = [
         'permissions' => 'array',
+        'report_categories' => 'array',
     ];
+
+    public function allowedReportCategories(): array {
+        return $this->report_categories ?? [];
+    }
+
+    public function canSeeReportCategory(string $key): bool {
+        $allowed = $this->allowedReportCategories();
+        // superadmin sees all
+        if ($this->isSuperAdmin()) return true;
+        return in_array($key, $allowed, true);
+    }
 
     public function isSuperAdmin(): bool
     {

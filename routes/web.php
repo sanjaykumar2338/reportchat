@@ -57,6 +57,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
         ->names('admin.users')
         ->middleware('permission:users');
 
+    Route::get('/admin/users/upload-csv', [AdminUserController::class, 'showUploadForm'])
+    ->name('admin.users.uploadCsv');
+
+    Route::post('/admin/users/upload-csv', [AdminUserController::class, 'importCsv'])
+        ->name('admin.users.importCsv');
+
     // Companies
     Route::post('/companies/send-notification', [\App\Http\Controllers\AdminCompanyController::class, 'sendNotification'])
         ->name('admin.companies.sendNotification')

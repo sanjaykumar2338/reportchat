@@ -54,7 +54,7 @@ class ChatController extends Controller
         ]);
 
         // Now insert chat messages based on flow
-        
+
         /*
         $flowMap = [
             "Servicio de Mantenimiento de TI" => [
@@ -122,7 +122,7 @@ class ChatController extends Controller
             $validatedData = $request->validate([
                 'chat_id' => 'required|integer|exists:chats,id',
                 'title' => 'nullable|string|max:255',
-                'sub_type' => 'required|string|max:255',  
+                'sub_type' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'location' => 'nullable|string|max:255',
                 'phone' => 'nullable|string|max:15',
@@ -143,7 +143,7 @@ class ChatController extends Controller
         }
 
         // Restrict update if not admin or owner
-        if (!auth()->user()->is_admin && $chat->user_id !== Auth::id()) {
+        if ((int)auth()->user()->is_admin === 0 && (int)$chat->user_id !== (int)Auth::id()) {
             return response()->json(['message' => 'Unauthorized access'], 403);
         }
 
@@ -171,16 +171,16 @@ class ChatController extends Controller
             $chat->image
         ) {
             $autoMessage = 'Gracias por tu reporte. Será revisado en breve. Te contactaremos por este medio.';
-        
+
             $alreadySent = ChatMessage::where('chat_id', $chat->id)
                 ->where('message', $autoMessage)
                 ->where('is_admin', true)
                 ->exists();
-        
+
             if (!$alreadySent) {
                 // Fetch any admin user
                 $admin = \App\Models\User::where('is_admin', 1)->first();
-        
+
                 $autoReply = ChatMessage::create([
                     'chat_id' => $chat->id,
                     'user_id' => $chat->user_id,
@@ -188,10 +188,10 @@ class ChatController extends Controller
                     'message' => $autoMessage,
                     'is_admin' => true,
                 ]);
-        
+
                 //broadcast(new \App\Events\MessageSent($autoReply))->toOthers();
             }
-        }        
+        }
 
         return response()->json([
             'message' => 'Chat updated successfully',
@@ -356,7 +356,7 @@ class ChatController extends Controller
                 finfo_close($finfo);
                 $imageType = substr($mime_type, strpos($mime_type, '/') + 1);
             }
-            
+
             // 4. Check if we have a valid image type
             $allowedTypes = ['jpeg', 'jpg', 'png', 'gif'];
             if (!in_array($imageType, $allowedTypes)) {

@@ -7,7 +7,13 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3" style="margin-left: 176px; width: 92%;">
         <h2>Gestión de Usuarios</h2>
-        <a href="{{ route('admin.users.create') }}" class="btn btn-success">+ Crear Usuario</a>
+        <div class="d-flex justify-content-between align-items-center mb-3" style="margin-left: 176px; width: 92%;">
+            <h2>Gestión de Usuarios</h2>
+            <div class="d-flex gap-2">
+                <a href="{{ route('admin.users.uploadCsv') }}" class="btn btn-primary">Subir CSV</a>
+                <a href="{{ route('admin.users.create') }}" class="btn btn-success">+ Crear Usuario</a>
+            </div>
+        </div>
     </div>
 
     <!-- Formulario de Búsqueda -->

@@ -79,55 +79,100 @@
         </div>
 
         {{-- Role & Permissions --}}
+        @if(auth()->user()->isSuperAdmin() || auth()->user()->isAdmin())
+        <div class="mb-3">
+            <label>Rol</label>
+            <select name="role" class="form-control" id="roleSelect">
+            <option value="user" {{ old('role', $user->role ?? '')=='user'?'selected':'' }}>Usuario</option>
+            @if(auth()->user()->isSuperAdmin())
+                <option value="admin" {{ old('role', $user->role ?? '')=='admin'?'selected':'' }}>Administrador</option>
+                <option value="superadmin" {{ old('role', $user->role ?? '')=='superadmin'?'selected':'' }}>Superadministrador</option>
+            @endif
+            </select>
+        </div>
+
         @if(auth()->user()->isSuperAdmin())
-            <div class="mb-3">
-                <label>Rol</label>
-                <select name="role" class="form-control" id="roleSelect">
-                    <option value="user" {{ old('role', $user->role ?? '')=='user'?'selected':'' }}>Usuario</option>
-                    <option value="admin" {{ old('role', $user->role ?? '')=='admin'?'selected':'' }}>Admin</option>
-                    <option value="superadmin" {{ old('role', $user->role ?? '')=='superadmin'?'selected':'' }}>Superadmin</option>
-                </select>
-            </div>
+            @php
+            // Módulos (solo etiqueta en español)
+            $modules = [
+                'dashboard' => 'Panel de Administración',
+                'users' => 'Usuarios',
+                'companies' => 'Empresas',
+                'rooms' => 'Salas',
+                'reservations' => 'Reservas',
+                'marketplace_categories' => 'Categorías del Marketplace',
+                'marketplace' => 'Anuncios del Marketplace',
+                'reports' => 'Reportes'
+            ];
+            $savedPermissions = old('permissions', $user->permissions ?? []);
+            
+            // Categorías de Reportes (claves internas => etiqueta visible)
+            $reportCategories = [
+                'mantenimiento'    => 'Orden de Mantenimiento',
+                'limpieza'         => 'Orden de Limpieza',
+                'ti'               => 'Servicio de Mantenimiento de TI',
+                'quejas_rest'      => 'Quejas y Sugerencias de los Restaurantes',
+                'medico'           => 'Servicio Médico',
+                'incendio_humo'    => 'Incendio/Humo',
+                'seguridad'        => 'Seguridad',
+            ];
+            $savedReportCats = old('report_categories', $user->report_categories ?? []);
+            @endphp
 
             <div id="permissionsBox" style="{{ old('role', $user->role ?? '')=='admin' ? '' : 'display:none;' }}">
-                <label>Permisos de Admin</label>
-                @php
-                    $modules = ['dashboard','users','companies','rooms','reservations','marketplace_categories','marketplace','reports'];
-                    $savedPermissions = old('permissions', $user->permissions ?? []);
-                @endphp
-                @foreach($modules as $module)
-                    <div>
-                        <input type="checkbox" name="permissions[{{ $module }}]" value="1"
-                               {{ !empty($savedPermissions[$module]) ? 'checked' : '' }}>
-                        {{ ucfirst($module) }}
-                    </div>
+            <label class="mb-1">Permisos de Admin</label>
+            @foreach($modules as $key => $label)
+                <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="permissions[{{ $key }}]" value="1"
+                        id="perm_{{ $key }}" {{ !empty($savedPermissions[$key]) ? 'checked' : '' }}>
+                <label class="form-check-label" for="perm_{{ $key }}">{{ $label }}</label>
+                </div>
+            @endforeach
+
+            {{-- Categorías de Reportes (multi-selección) --}}
+            <div class="mt-3 p-2 border rounded" id="reportCatsBox"
+                style="{{ !empty($savedPermissions['reports']) ? '' : 'display:none;' }}">
+                <label class="mb-1 d-block">Categorías visibles en “Reportes”</label>
+                @foreach($reportCategories as $key => $label)
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox"
+                        name="report_categories[]"
+                        id="rc_{{ $key }}" value="{{ $key }}"
+                        {{ in_array($key, (array)$savedReportCats, true) ? 'checked' : '' }}>
+                    <label class="form-check-label" for="rc_{{ $key }}">{{ $label }}</label>
+                </div>
                 @endforeach
+                <small class="text-muted">Si no seleccionas ninguna, el admin no verá ninguna categoría.</small>
+            </div>
             </div>
         @endif
+        @endif
 
-        {{-- Submit --}}
         <div class="mb-3">
-            <button type="submit" class="btn btn-primary">{{ isset($user) ? 'Actualizar' : 'Crear' }}</button>
+            <button type="submit" class="btn btn-primary">
+                {{ isset($user) ? 'Actualizar' : 'Crear' }}
+            </button>
         </div>
     </form>
-</div>
 
-{{-- ✅ Add script to toggle permissions dynamically --}}
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    let roleSelect = document.getElementById('roleSelect');
-    let permissionsBox = document.getElementById('permissionsBox');
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+        const roleSelect = document.getElementById('roleSelect');
+        const permissionsBox = document.getElementById('permissionsBox');
+        const permReports = document.getElementById('perm_reports');
+        const reportCatsBox = document.getElementById('reportCatsBox');
 
-    if(roleSelect){
-        roleSelect.addEventListener('change', function () {
-            if (this.value === 'admin') {
-                permissionsBox.style.display = 'block';
-            } else {
-                permissionsBox.style.display = 'none';
-            }
+        function togglePerms() {
+            if (!roleSelect) return;
+            permissionsBox && (permissionsBox.style.display = (roleSelect.value === 'admin') ? 'block' : 'none');
+        }
+        function toggleReportCats() {
+            if (!permReports || !reportCatsBox) return;
+            reportCatsBox.style.display = permReports.checked ? 'block' : 'none';
+        }
+        roleSelect && roleSelect.addEventListener('change', togglePerms);
+        permReports && permReports.addEventListener('change', toggleReportCats);
+        togglePerms(); toggleReportCats();
         });
-    }
-});
-</script>
-
+    </script>
 @endsection
