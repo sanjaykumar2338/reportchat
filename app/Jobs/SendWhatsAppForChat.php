@@ -6,6 +6,7 @@ use App\Models\Chat;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -25,11 +26,19 @@ class SendWhatsAppForChat implements ShouldQueue
 
     public function handle(): void
     {
+        Log::info('SendWhatsAppForChat started', ['chatId' => $this->chatId]);
+
         $chat = Chat::with('user')->find($this->chatId);
-        if (!$chat) return;
+        if (!$chat) {
+            Log::warning('Chat not found', ['chatId' => $this->chatId]);
+            return;
+        }
 
         $key = $this->categoryKeyFromTitle($chat->title);
-        if (!$key) return;
+        if (!$key) {
+            Log::warning('Category key not found for title', ['title' => $chat->title]);
+            return;
+        }
 
         // Eligible admins
         $admins = User::query()
@@ -39,24 +48,64 @@ class SendWhatsAppForChat implements ShouldQueue
             ->whereJsonContains('report_categories', $key)
             ->get();
 
-        if ($admins->isEmpty()) return;
+        Log::info('Admins fetched for WhatsApp notify', [
+            'chatId' => $chat->id,
+            'categoryKey' => $key,
+            'admin_count' => $admins->count(),
+        ]);
+
+        if ($admins->isEmpty()) {
+            Log::info('No admins eligible for WhatsApp notification', ['chatId' => $chat->id]);
+            return;
+        }
 
         $token = config('services.whapi.token') ?: env('WHAPI_TOKEN');
-        if (!$token) return;
+        if (!$token) {
+            Log::error('WHAPI token missing', ['chatId' => $chat->id]);
+            return;
+        }
 
         $body = $this->buildMessage($chat);
+        Log::info('WhatsApp message built', ['chatId' => $chat->id, 'body' => $body]);
 
         foreach ($admins as $admin) {
             $to = preg_replace('/\D+/', '', (string) $admin->phone); // digits only
-            if (!$to) continue;
+            if (!$to) {
+                Log::warning('Skipping admin with invalid phone', ['adminId' => $admin->id]);
+                continue;
+            }
 
-            Http::withToken($token)
-                ->asJson()
-                ->post('https://gate.whapi.cloud/messages/text', [
-                    'to'   => $to,
-                    'body' => $body,
-                ])
-                ->throw(); // let the job retry if it fails
+            try {
+                $response = Http::withToken($token)
+                    ->asJson()
+                    ->post('https://gate.whapi.cloud/messages/text', [
+                        'to'   => $to,
+                        'body' => $body,
+                    ]);
+
+                if ($response->successful()) {
+                    Log::info('WhatsApp message sent successfully', [
+                        'chatId' => $chat->id,
+                        'adminId' => $admin->id,
+                        'to' => $to,
+                    ]);
+                } else {
+                    Log::error('WhatsApp message failed', [
+                        'chatId' => $chat->id,
+                        'adminId' => $admin->id,
+                        'to' => $to,
+                        'status' => $response->status(),
+                        'body' => $response->body(),
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::error('Exception while sending WhatsApp message', [
+                    'chatId' => $chat->id,
+                    'adminId' => $admin->id,
+                    'to' => $to,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 
@@ -68,12 +117,11 @@ class SendWhatsAppForChat implements ShouldQueue
             if (!empty($value)) $lines[] = "$label: $value";
         };
 
-        $add('Categoría',     $chat->title);        // full label from UI
+        $add('Categoría',     $chat->title);
         $add('Subcategoría',  $chat->sub_type);
         $add('Lugar',         $chat->location);
         $add('Descripción',   $chat->description);
 
-        // reporter (user who sent it)
         $senderName  = optional($chat->user)->name;
         $senderEmail = optional($chat->user)->email;
         $senderPhone = $chat->phone ?: optional($chat->user)->phone;
@@ -104,7 +152,6 @@ class SendWhatsAppForChat implements ShouldQueue
 
         if (isset($map[$title])) return $map[$title];
 
-        // tolerant match (accents/case)
         $norm = function ($s) {
             $s = mb_strtolower(trim($s), 'UTF-8');
             return strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ñ'=>'n','ü'=>'u']);
@@ -114,6 +161,7 @@ class SendWhatsAppForChat implements ShouldQueue
         foreach ($map as $label => $key) {
             if ($norm($label) === $needle) return $key;
         }
+
         return null;
     }
 }
