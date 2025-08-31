@@ -54,8 +54,6 @@ class ChatController extends Controller
             'status' => 'pending',
         ]);
 
-        SendWhatsAppForChat::dispatch($chat->id);
-        
         return response()->json([
             'message' => 'Chat started successfully',
             'chat' => $chat
@@ -117,7 +115,6 @@ class ChatController extends Controller
             $chat->image
         ) {
             $autoMessage = 'Gracias por tu reporte. Será revisado en breve. Te contactaremos por este medio.';
-
             $alreadySent = ChatMessage::where('chat_id', $chat->id)
                 ->where('message', $autoMessage)
                 ->where('is_admin', true)
@@ -135,6 +132,7 @@ class ChatController extends Controller
                     'is_admin' => true,
                 ]);
 
+                SendWhatsAppForChat::dispatch($chat->id);
                 //broadcast(new \App\Events\MessageSent($autoReply))->toOthers();
             }
         }
