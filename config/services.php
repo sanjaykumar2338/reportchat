@@ -25,7 +25,7 @@ return [
     ],
 
     'whapi' => [
-        'token' => 'nSCrB23lRJ6ylAzi2qEKU51Fnppw7Qsb',
+        'token' => env('WHAPI_TOKEN'),
     ],
 
     'resend' => [

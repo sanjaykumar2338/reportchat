@@ -59,7 +59,7 @@ class SendWhatsAppForChat implements ShouldQueue
             return;
         }
 
-        $token = 'nSCrB23lRJ6ylAzi2qEKU51Fnppw7Qsb'; //config('services.whapi.token') ?: env('WHAPI_TOKEN');
+        $token = config('services.whapi.token') ?: env('WHAPI_TOKEN');
         if (!$token) {
             Log::error('WHAPI token missing', ['chatId' => $chat->id]);
             return;
