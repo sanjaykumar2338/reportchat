@@ -18,6 +18,7 @@ class Chat extends Model
         'email',
         'image',
         'status',
+        'whats_notification_send'
     ];
 
     protected $casts = [

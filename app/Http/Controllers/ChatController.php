@@ -105,6 +105,20 @@ class ChatController extends Controller
         $chat->email = $validatedData['email'] ?? $chat->email;
         $chat->save();
 
+
+        //for whatsapp notification
+        if (
+            $chat->title &&
+            $chat->description &&
+            $chat->location &&
+            $chat->phone &&
+            $chat->email
+        ) {
+            SendWhatsAppForChat::dispatch($chat->id);
+            $chat->whats_notification_send = 1;
+            $chat->save();
+        }
+
         // Check if all required fields are now set
         if (
             $chat->title &&
@@ -123,7 +137,6 @@ class ChatController extends Controller
             if (!$alreadySent) {
                 // Fetch any admin user
                 $admin = \App\Models\User::where('is_admin', 1)->first();
-
                 $autoReply = ChatMessage::create([
                     'chat_id' => $chat->id,
                     'user_id' => $chat->user_id,
@@ -131,8 +144,6 @@ class ChatController extends Controller
                     'message' => $autoMessage,
                     'is_admin' => true,
                 ]);
-
-                SendWhatsAppForChat::dispatch($chat->id);
                 //broadcast(new \App\Events\MessageSent($autoReply))->toOthers();
             }
         }
