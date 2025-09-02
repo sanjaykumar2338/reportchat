@@ -18,6 +18,8 @@ class ChatController extends Controller
     // Start a new chat with automatic questions
     public function startChat(Request $request)
     {
+        Log::info('updateChat request input:', $request->all());
+        
         try {
             $validatedData = $request->validate([
                 'title' => 'required|string|max:255',         // e.g., "IT Support Request"
@@ -110,9 +112,7 @@ class ChatController extends Controller
         if (
             $chat->title &&
             $chat->description &&
-            $chat->location &&
-            $chat->phone &&
-            $chat->email
+            $chat->location
         ) {
             SendWhatsAppForChat::dispatch($chat->id);
             $chat->whats_notification_send = 1;
@@ -124,8 +124,6 @@ class ChatController extends Controller
             $chat->title &&
             $chat->description &&
             $chat->location &&
-            $chat->phone &&
-            $chat->email &&
             $chat->image
         ) {
             $autoMessage = 'Gracias por tu reporte. Será revisado en breve. Te contactaremos por este medio.';
