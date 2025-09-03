@@ -13,9 +13,8 @@ class AdminUserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::query();
         $query = User::query()
-        ->where('role', '!=', 'superadmin');
+            ->where('role', '!=', 'superadmin'); // hide superadmins
 
         if ($request->filled('name')) {
             $query->where('name', 'like', '%'.$request->name.'%');
@@ -25,14 +24,18 @@ class AdminUserController extends Controller
             $query->where('email', 'like', '%'.$request->email.'%');
         }
 
-        // (Optional) allow searching by username too:
         if ($request->filled('username')) {
             $query->where('username', 'like', '%'.$request->username.'%');
         }
 
-        $users = $query->latest()->paginate(10);
+        if ($request->filled('role')) {
+            $query->where('role', $request->role); // filter by user/admin
+        }
 
-        return view('admin.users.index', compact('users'));
+        $users = $query->latest()->paginate(10);
+        $allEnabled = User::where('role', 'admin')->where('whatsapp_notifications', false)->doesntExist();
+
+        return view('admin.users.index', compact('users','allEnabled'));
     }
 
     public function show($id)
@@ -375,5 +378,43 @@ class AdminUserController extends Controller
             'success'    => $msg,
             'csv_errors' => $errors,
         ]);
+    }
+
+    public function toggleAllNotifications()
+    {
+        // Check if there are any admins with notifications turned off.
+        $anyDisabled = User::where('role', 'admin')->where('whatsapp_notifications', false)->exists();
+
+        if ($anyDisabled) {
+            // If at least one is disabled, enable all.
+            User::where('role', 'admin')->update(['whatsapp_notifications' => true]);
+            return back()->with('success', 'Notificaciones habilitadas para todos los administradores.');
+        } else {
+            // Otherwise, disable all.
+            User::where('role', 'admin')->update(['whatsapp_notifications' => false]);
+            return back()->with('success', 'Notificaciones deshabilitadas para todos los administradores.');
+        }
+    }
+
+    /**
+     * Toggles notifications for a single user.
+     */
+    public function toggleNotification(User $user)
+    {
+        // Toggle the boolean value and save it
+        $user->whatsapp_notifications = !$user->whatsapp_notifications;
+        $user->save();
+
+        $status = $user->whatsapp_notifications ? 'habilitadas' : 'deshabilitadas';
+        
+        return back()->with('success', "Notificaciones {$status} para el usuario {$user->name}.");
+    }
+
+    // Note: The enableAllNotifications method is now redundant because
+    // toggleAllNotifications handles both cases. You can keep it or remove it.
+    public function enableAllNotifications()
+    {
+        User::where('role', 'admin')->update(['whatsapp_notifications' => true]);
+        return back()->with('success', 'Notificaciones habilitadas para todos los administradores');
     }
 }

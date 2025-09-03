@@ -123,6 +123,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     // Profile (no permission required, only auth)
     Route::get('/profile', [AdminUserController::class, 'profile'])->name('admin.profile');
     Route::put('/profile', [AdminUserController::class, 'updateProfile'])->name('admin.profile.update');
+
+    Route::post('/admin/users/toggle-all-notifications', [AdminUserController::class, 'toggleAllNotifications'])->name('admin.users.toggleAllNotifications');
+    Route::put('/admin/users/{user}/toggle-notification', [AdminUserController::class, 'toggleNotification'])->name('admin.users.toggleNotification');
+    Route::post('/admin/users/enable-all-notifications', [AdminUserController::class, 'enableAllNotifications'])->name('admin.users.enableAllNotifications');
 });
 
 Route::get('/bulk-register', function () {
