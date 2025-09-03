@@ -37,7 +37,7 @@
                 <th>Empresa</th>
                 <th>Rol</th>
                 {{-- ✅ CHANGE 2: Only show this table header to super-admins --}}
-                @if (Auth::check() && Auth::user()->role === 'super-admin')
+                @if (Auth::check() && Auth::user()->role === 'superadmin')
                     <th>Notif. WhatsApp</th>
                 @endif
                 <th>Acciones</th>
