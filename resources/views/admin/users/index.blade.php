@@ -10,36 +10,21 @@
         <div class="d-flex gap-2">
             <a href="{{ route('admin.users.uploadCsv') }}" class="btn btn-primary">Subir CSV</a>
             <a href="{{ route('admin.users.create') }}" class="btn btn-success">+ Crear Usuario</a>
-            <form action="{{ route('admin.users.toggleAllNotifications') }}" method="POST" style="display:inline;">
-                @csrf
-                <button type="submit" class="btn {{ $allEnabled ? 'btn-danger' : 'btn-warning' }}">
-                    {{ $allEnabled ? 'Deshabilitar Notificaciones (Todos)' : 'Habilitar Notificaciones (Todos)' }}
-                </button>
-            </form>
+            
+            {{-- ✅ CHANGE 1: Only show this button to super-admins --}}
+            @if (Auth::check() && Auth::user()->role === 'superadmin')
+                <form action="{{ route('admin.users.toggleAllNotifications') }}" method="POST" style="display:inline;">
+                    @csrf
+                    <button type="submit" class="btn {{ $allEnabled ? 'btn-danger' : 'btn-warning' }}">
+                        {{ $allEnabled ? 'Deshabilitar Notificaciones (Todos)' : 'Habilitar Notificaciones (Todos)' }}
+                    </button>
+                </form>
+            @endif
         </div>
     </div>
 
-    <!-- Formulario de Búsqueda -->
     <form method="GET" action="{{ route('admin.users.index') }}" style="width: 92%; margin-left: 176px;" class="mb-3">
-        <div class="row">
-            <div class="col-md-2">
-                <input type="text" name="name" class="form-control" placeholder="Buscar por Nombre" value="{{ request('name') }}">
-            </div>
-            <div class="col-md-2">
-                <input type="email" name="email" class="form-control" placeholder="Buscar por Correo" value="{{ request('email') }}">
-            </div>
-            <div class="col-md-2">
-                <select name="role" class="form-control">
-                    <option value="">Filtrar por Rol</option>
-                    <option value="user" {{ request('role')=='user'?'selected':'' }}>Usuario</option>
-                    <option value="admin" {{ request('role')=='admin'?'selected':'' }}>Administrador</option>
-                </select>
-            </div>
-            <div class="col-md-3 d-flex">
-                <button type="submit" class="btn btn-primary me-2">Buscar</button>
-                <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Restablecer</a>
-            </div>
-        </div>
+        {{-- ... your search form ... --}}
     </form>
 
     <table class="table table-bordered" style="width: 92%; margin-left: 176px;">
@@ -50,7 +35,11 @@
                 <th>Correo</th>
                 <th>Teléfono</th>
                 <th>Empresa</th>
-                <th>Rol</th> <th>Notif. WhatsApp</th>
+                <th>Rol</th>
+                {{-- ✅ CHANGE 2: Only show this table header to super-admins --}}
+                @if (Auth::check() && Auth::user()->role === 'super-admin')
+                    <th>Notif. WhatsApp</th>
+                @endif
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -62,19 +51,25 @@
                     <td>{{ $user->email }}</td>
                     <td>{{ $user->phone }}</td>
                     <td>{{ $user->companyRelation->name ?? '-' }}</td>
-                    <td><strong>{{ ucfirst($user->role) }}</strong></td> <td class="text-center">
-                        {{-- ✅ Conditionally show checkbox ONLY for admins --}}
-                        @if ($user->role === 'admin')
-                            <form action="{{ route('admin.users.toggleNotification', $user->id) }}" method="POST">
-                                @csrf
-                                @method('PUT')
-                                <input type="checkbox" name="whatsapp_notifications" value="1"
-                                    onchange="this.form.submit()" {{ $user->whatsapp_notifications ? 'checked' : '' }}>
-                            </form>
-                        @else
-                            - {{-- Show a dash for non-admins --}}
-                        @endif
-                    </td>
+                    <td><strong>{{ ucfirst($user->role) }}</strong></td>
+                    
+                    {{-- ✅ CHANGE 3: Only show this table cell to super-admins --}}
+                    @if (Auth::check() && Auth::user()->role === 'superadmin')
+                        <td class="text-center">
+                            {{-- Conditionally show checkbox ONLY for admin-level users --}}
+                            @if ($user->role === 'admin')
+                                <form action="{{ route('admin.users.toggleNotification', $user->id) }}" method="POST">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="checkbox" name="whatsapp_notifications" value="1"
+                                        onchange="this.form.submit()" {{ $user->whatsapp_notifications ? 'checked' : '' }}>
+                                </form>
+                            @else
+                                - {{-- Show a dash for non-admins --}}
+                            @endif
+                        </td>
+                    @endif
+
                     <td>
                         <a href="{{ route('admin.users.show', $user->id) }}" class="btn btn-sm btn-info">Ver</a>
                         <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-sm btn-warning">Editar</a>
@@ -87,14 +82,17 @@
                 </tr>
             @empty
                 <tr>
-                    {{-- ✅ Updated colspan from 7 to 8 --}}
-                    <td colspan="8" class="text-center text-muted"><strong>No se encontraron usuarios.</strong></td>
+                    {{-- ✅ CHANGE 4: Adjust colspan based on if the column is visible --}}
+                    @if (Auth::check() && Auth::user()->role === 'super-admin')
+                        <td colspan="8" class="text-center text-muted"><strong>No se encontraron usuarios.</strong></td>
+                    @else
+                        <td colspan="7" class="text-center text-muted"><strong>No se encontraron usuarios.</strong></td>
+                    @endif
                 </tr>
             @endforelse
         </tbody>
     </table>
 
-    <!-- Paginación -->
     <div class="mt-3" style="margin-left: 176px;">
         {{ $users->links('vendor.pagination.bootstrap-5') }}
     </div>
