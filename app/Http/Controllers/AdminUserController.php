@@ -347,7 +347,7 @@ class AdminUserController extends Controller
                 'phone'      => $Telefono ?: null,
                 'password'   => Hash::make($Contrasena),
                 'role'       => 'user',
-                'company_id' => $company->id ?? null,
+                'company' => $company->id ?? null,
                 'permissions'       => [],
                 'report_categories' => [],
             ];
